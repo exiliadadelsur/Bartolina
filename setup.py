@@ -3,7 +3,7 @@
 
 # This file is part of the
 #   Bartolina Project (https://github.com/exiliadadelsur/Bartolina).
-# Copyright (c) 2019 Noelia Perez
+# Copyright (c) 2020 Noelia Perez
 # License: MIT
 #   Full Text: https://github.com/exiliadadelsur/Bartolina/blob/master/LICENSE
 
@@ -33,7 +33,8 @@ from setuptools import setup
 # CONSTANTS
 # =============================================================================
 
-# REQUIREMENTS = ["numpy", "scipy", "attrs", "matplotlib"]
+ REQUIREMENTS = ["numpy", "astropy", "attrs","sklearn","NFW"]
+
 
 # PATH = pathlib.Path(os.path.abspath(os.path.dirname(__file__)))
 
