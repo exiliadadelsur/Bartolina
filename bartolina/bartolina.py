@@ -73,10 +73,10 @@ class ReZSpace(object):
 
         self.hmass = hmass[hmass > self.Mth]
 
-    # reconstructed Kaiser space; based on correcting for FOG effect only
+    # reconstructed FoG space; based on correcting for Kaiser effect only
 
 
-#    def ReKaiserSpace(self):
+#    def ReFoGSpace(self):
 
 #       Grillado 3D
 
@@ -105,8 +105,8 @@ class ReZSpace(object):
 #       rcomovingk = calculo de distancia comoving a partir de zk
 #       return #rcomovingk
 
-#   reconstructed FOG space; based on correcting for Kaiser effect only
-#   def ReFoGSpace(self):
+#   reconstructed Kaiser space; based on correcting for FoG effect only
+#   def ReKaiserSpace(self):
 #       return rcomovingf
 
 #    Re-real space reconstructed real space; based on correcting redshift
