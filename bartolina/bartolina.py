@@ -5,6 +5,7 @@
 #   Full Text: https://github.com/exiliadadelsur/Bartolina/blob/master/LICENSE
 
 import numpy as np
+import pandas as pd
 from astropy.cosmology import LambdaCDM, z_at_value
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -47,21 +48,21 @@ class ReZSpace(object):
         )
 
         unique_elements = unique_elements[unique_elements > -1]
-        xyzcentros = np.empty([len(unique_elements), 3])
+        self.xyzcentros = np.empty([len(unique_elements), 3])
         hmass = np.empty([len(unique_elements)])
         for i in unique_elements:
             v1 = xyz[self.clustering.labels_ == i]
-            xyzcentros[i, 0] = np.mean(v1[:, 0])
-            xyzcentros[i, 1] = np.mean(v1[:, 1])
-            xyzcentros[i, 2] = np.mean(v1[:, 2])
+            self.xyzcentros[i, 0] = np.mean(v1[:, 0])
+            self.xyzcentros[i, 1] = np.mean(v1[:, 1])
+            self.xyzcentros[i, 2] = np.mean(v1[:, 2])
             xradio = np.std(xyz[:, 0])
             yradio = np.std(xyz[:, 1])
             zradio = np.std(xyz[:, 2])
             radio = np.sqrt(xradio ** 2 + yradio ** 2 + zradio ** 2)
             dc_centro = np.sqrt(
-                xyzcentros[i, 0] ** 2
-                + xyzcentros[i, 1] ** 2
-                + xyzcentros[i, 2] ** 2
+                self.xyzcentros[i, 0] ** 2
+                + self.xyzcentros[i, 1] ** 2
+                + self.xyzcentros[i, 2] ** 2
             )
             redshift = self.z[self.clustering.labels_ == i]
             z_centro = z_at_value(
@@ -78,13 +79,33 @@ class ReZSpace(object):
             hmass[i] = nfw.mass(r200).value
 
         self.hmass = hmass[hmass > self.Mth]
+        self.xyzcentros = self.xyzcentros[hmass > self.Mth]
 
     # reconstructed FoG space; based on correcting for Kaiser effect only
 
+    def ReKaiserSpace(self):
 
-#    def ReFoGSpace(self):
+        limxsup = self.xyzcentros[:, 0].max()
+        limysup = self.xyzcentros[:, 1].max()
+        limzsup = self.xyzcentros[:, 2].max()
+        limsup = np.max(np.array([limxsup, limysup, limzsup])) + 0.001
+        limxmin = self.xyzcentros[:, 0].min()
+        limymin = self.xyzcentros[:, 1].min()
+        limzmin = self.xyzcentros[:, 2].min()
+        liminf = np.min(np.array([limxmin, limymin, limzmin])) - 0.001
+        bines = np.linspace(liminf, limsup, 1024)
+        binnum = np.arange(0, 1023)
+        xdist = pd.cut(self.xyzcentros[:, 0], bins=bines, labels=binnum)
+        ydist = pd.cut(self.xyzcentros[:, 1], bins=bines, labels=binnum)
+        zdist = pd.cut(self.xyzcentros[:, 2], bins=bines, labels=binnum)
+        self.valingrid = np.array(
+            [
+                np.array([xdist]),
+                np.array([ydist]),
+                np.array([zdist]),
+            ]
+        ).T
 
-#       Grillado 3D
 
 #       Halo bias
 #       calcular k y P_linear con CAMB
@@ -112,8 +133,14 @@ class ReZSpace(object):
 #       return #rcomovingk
 
 #   reconstructed Kaiser space; based on correcting for FoG effect only
-#   def ReKaiserSpace(self):
-#       return rcomovingf
+#    def ReFoGSpace(self):
+#       radio=1
+#       numgal=150
+#       c=4
+#       n0 = (numgal/(4*np.pi*radio))*(1/(np.log(1+c)-c/(1+c)))
+#       r=np.random.unifor(0,1,size=numgal)
+#       distr = n0/(r/radio)(1+r/radio)**2
+#       dccorr = dc_centro + distr
 
 #    Re-real space reconstructed real space; based on correcting redshift
 #    space distortions
