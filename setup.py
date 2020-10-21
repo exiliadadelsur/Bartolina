@@ -33,13 +33,7 @@ from setuptools import setup
 # CONSTANTS
 # =============================================================================
 
-REQUIREMENTS = [
-    "numpy",
-    "astropy",
-    "attrs",
-    "sklearn",
-    "NFW",
-]
+REQUIREMENTS = ["numpy", "astropy", "attrs", "sklearn", "NFW", "pandas"]
 
 # PATH = pathlib.Path(os.path.abspath(os.path.dirname(__file__)))
 
