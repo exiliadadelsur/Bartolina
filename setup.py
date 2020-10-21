@@ -33,7 +33,13 @@ from setuptools import setup
 # CONSTANTS
 # =============================================================================
 
-REQUIREMENTS = ["numpy", "astropy", "attrs","sklearn","NFW"]
+REQUIREMENTS = [
+    "numpy",
+    "astropy",
+    "attrs",
+    "sklearn",
+    "NFW",
+]
 
 # PATH = pathlib.Path(os.path.abspath(os.path.dirname(__file__)))
 
@@ -46,10 +52,6 @@ REQUIREMENTS = ["numpy", "astropy", "attrs","sklearn","NFW"]
 #             VERSION = line.split("=", 1)[-1].replace('"', '').strip()
 #             break
 
-
-# DESCRIPTION = "Grid Search in Python"
-
-
 # =============================================================================
 # FUNCTIONS
 # =============================================================================
@@ -58,35 +60,17 @@ REQUIREMENTS = ["numpy", "astropy", "attrs","sklearn","NFW"]
 def do_setup():
     setup(
         name="bartolina",
+        version="0.0.1",
+        description="Corrections for the redshift distortion",
         author=["Noelia Rocío Perez", "Claudio Antonio Lopez Cortez"],
-        keywords=["space redshift"],
-        dependency_links=['https://github.com/tmcclintock/cluster_toolkit.git']
-
+        url="https://github.com/exiliadadelsur/Bartolina",
+        license="MIT",
+        keywords=["space redshift", "kaiser", "finger of god", "fog"],
+        install_requires=REQUIREMENTS,
+        dependency_links=[
+            "https://github.com/tmcclintock/cluster_toolkit.git"
+        ],
     )
-
-#        install_requires=['https://github.com/tmcclintock/cluster_toolkit.git']
-# version="0.0.1",
-# description=DESCRIPTION,
-# long_description=LONG_DESCRIPTION,
-# long_description_content_type='text/markdown',
-# author_email="tinchochalela@gmail.com",
-# url="https://github.com/mchalela/GriSPy",
-# license="MIT",
-# classifiers=[
-#     "Development Status :: 4 - Beta",
-#     "Intended Audience :: Education",
-#     "Intended Audience :: Science/Research",
-#     "License :: OSI Approved :: MIT License",
-#     "Operating System :: OS Independent",
-#     "Programming Language :: Python",
-#     "Programming Language :: Python :: 3.8",
-#     "Programming Language :: Python :: Implementation :: CPython",
-#     "Topic :: Scientific/Engineering"],
-
-# packages=["grispy"],
-# py_modules=["ez_setup"],
-
-# install_requires=REQUIREMENTS)
 
 
 if __name__ == "__main__":
