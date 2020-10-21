@@ -27,3 +27,15 @@ def test_hmass():
     obj = bt.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
     obj.mclustering()
     assert len(obj.hmass) == 24
+
+
+def test_grid3d():
+
+    gal = Table.read("resources/SDSS.fits")
+    obj = bt.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
+    obj.mclustering()
+    obj.ReKaiserSpace()
+    unique_elements, counts_elements = np.unique(
+        obj.valingrid, axis=0, return_counts=True
+    )
+    assert len(unique_elements) == len(counts_elements)
