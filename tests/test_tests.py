@@ -1,3 +1,9 @@
+# This file is part of the
+#   Bartolina Project (https://github.com/exiliadadelsur/Bartolina).
+# Copyright (c) 2020 Noelia Perez
+# License: MIT
+#   Full Text: https://github.com/exiliadadelsur/Bartolina/blob/master/LICENSE
+
 import numpy as np
 import bartolina as bt
 from astropy.table import Table
