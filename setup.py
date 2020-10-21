@@ -33,7 +33,7 @@ from setuptools import setup
 # CONSTANTS
 # =============================================================================
 
-# REQUIREMENTS = ["numpy", "scipy", "attrs", "matplotlib"]
+# REQUIREMENTS = ['https://github.com/tmcclintock/cluster_toolkit.git']
 
 # PATH = pathlib.Path(os.path.abspath(os.path.dirname(__file__)))
 
@@ -60,9 +60,11 @@ def do_setup():
         name="bartolina",
         author=["Noelia Rocío Perez", "Claudio Antonio Lopez Cortez"],
         keywords=["space redshift"],
+        dependency_links=['https://github.com/tmcclintock/cluster_toolkit.git']
+
     )
 
-
+#        install_requires=['https://github.com/tmcclintock/cluster_toolkit.git']
 # version="0.0.1",
 # description=DESCRIPTION,
 # long_description=LONG_DESCRIPTION,
