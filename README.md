@@ -5,7 +5,7 @@ We follow the work carried out in [Shi et al. 2016, ApJ, 833, 241](https://iopsc
 
 Bartolina has the following queries implemented:
 * **ReFoGSpace**: Reconstruct Finger of God space. Corrects the Finger of God effect only.
-* **ReKaiserSpace**: Reconstruct Kaiser space. Corrects the Finger of God effect only.
+* **ReKaiserSpace**: Reconstruct Kaiser space. Corrects the Kaiser effect only.
 * **ReRealSpace**: Reconstruct real space. Corrects both effects.
 
 ## Requirements
