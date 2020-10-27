@@ -3,14 +3,24 @@
 Bartolina is a real space reconstruction algorithm that corrects galaxy positions by Kaiser and Finger of God effects. 
 We follow the work carried out in [Shi et al. 2016, ApJ, 833, 241](https://iopscience.iop.org/article/10.3847/1538-4357/833/2/241/pdf).
 
-Bartolina has the following queries implemented:
-* **ReFoGSpace**: Reconstruct Finger of God space. Corrects the Finger of God effect only.
-* **ReKaiserSpace**: Reconstruct Kaiser space. Corrects the Kaiser effect only.
-* **ReRealSpace**: Reconstruct real space. Corrects both effects.
+Bartolina has the principal class:
+* **ReZspace**: Sets parameters such as the cosmology to use and allows a set of methods. 
+
+Bartolina has the following methods:
+* **Haloes**: Find massive dark matter haloes and cartesian coordinates of his centers. Necesary for all the other methods.
+* **Kaisercorr**: Reconstruct Kaiser space. Corrects the Kaiser effect only.
+* **FoGcorr**: Reconstruct Finger of God space. Corrects the Finger of God effect only.
+* **RealSpace**: Reconstruct real space. Corrects both effects (Kaiser and FoG).
 
 ## Requirements
 
-## Standard Installation
+You need Python 3.8 to run Bartolina
+
+## Development Install
+
+Clone this repo and then inside the local directory execute
+
+* $ pip install -e .
 
 ## License
 
