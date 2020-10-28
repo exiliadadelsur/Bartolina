@@ -30,7 +30,8 @@ class ReZSpace(object):
     cosmo = attr.ib(default=LambdaCDM(H0=100, Om0=0.27, Ode0=0.73))
     Mth = attr.ib(default=(10 ** 12.5))
 
-    def mclustering(self):
+    def Halos(self):
+
         dc = self.cosmo.comoving_distance(self.z)
         c = SkyCoord(
             ra=np.array(self.ra) * u.degree,
@@ -47,7 +48,7 @@ class ReZSpace(object):
             self.clustering.labels_, return_counts=True
         )
 
-        unique_elements = unique_elements[unique_elements > -1]
+        self.unique_elements = unique_elements[unique_elements > -1]
         self.xyzcentros = np.empty([len(unique_elements), 3])
         hmass = np.empty([len(unique_elements)])
         for i in unique_elements:
@@ -78,13 +79,13 @@ class ReZSpace(object):
             r200 = cparam * radio
             hmass[i] = nfw.mass(r200).value
 
-        self.hmass = hmass[hmass > self.Mth]
-        self.xyzcentros = self.xyzcentros[hmass > self.Mth]
+        self.labelshmassive = np.where(hmass > self.Mth)
 
     # reconstructed FoG space; based on correcting for Kaiser effect only
 
-    def ReKaiserSpace(self):
+    def Kaisercorr(self):
 
+        self.xyzcentros = self.xyzcentros[self.labelshmassive]
         limxsup = self.xyzcentros[:, 0].max()
         limysup = self.xyzcentros[:, 1].max()
         limzsup = self.xyzcentros[:, 2].max()
@@ -106,46 +107,82 @@ class ReZSpace(object):
             ]
         ).T
 
+        # Halo bias
+        # calcular k y P_linear con CAMB
+        # cosmología
+        # pars = camb.CAMBparams()
+        # pars.set_cosmology(self.H0, ombh2=0.022, omch2=0.122)
+        # pars.set_dark_energy(w=-1.0)
+        # pars.InitPower.set_params(ns=0.965)
+        # pars.set_matter_power(redshifts=[0.0, 0.8], kmax=2.0)
+        # calcula plineal
+        # pars.NonLinear = model.NonLinear_none
+        # results = camb.get_results(pars)
+        # kh, z, pk = results.get_matter_power_spectrum(minkh=1e-4, maxkh=1,
+        #                                                 npoints=1000)
+        # bhm = bias.bias_at_M(self.Mth, kh, pk, self.omega_m)
+        # Mass density contrast
+        # deltah =
+        # Calculo de f
+        # f = self.omega_m ** 0.6 + 1 / 70 * self.omega_lambda *
+        # (1 + self.omega_m)
+        # ReKaiserZ
+        # zk = (self.z - v/const.c) / 1 + v/const.c
+        # Comoving distance
+        # rcomovingk = calculo de distancia comoving a partir de zk
+        # return rcomovingk
 
-#       Halo bias
-#       calcular k y P_linear con CAMB
-#       cosmología
-#       pars = camb.CAMBparams()
-#       pars.set_cosmology(self.H0, ombh2=0.022, omch2=0.122)
-#       pars.set_dark_energy(w=-1.0)
-#       pars.InitPower.set_params(ns=0.965)
-#       pars.set_matter_power(redshifts=[0.0, 0.8], kmax=2.0)
-#       calcula plineal
-#       pars.NonLinear = model.NonLinear_none
-#       results = camb.get_results(pars)
-#       kh, z, pk = results.get_matter_power_spectrum(minkh=1e-4, maxkh=1,
-#                                                     npoints=1000)
-#       bhm = bias.bias_at_M(self.Mth, kh, pk, self.omega_m)
-#       Mass density contrast
-#       deltah =
-#       Calculo de f
-#       f = self.omega_m ** 0.6 + 1 / 70 * self.omega_lambda *
-#       (1 + self.omega_m)
-#       ReKaiserZ
-#       zk = (self.z - v/const.c) / 1 + v/const.c
-#       Comoving distance
-#       rcomovingk = calculo de distancia comoving a partir de zk
-#       return #rcomovingk
+    #   reconstructed Kaiser space; based on correcting for FoG effect only
+    def FoGcorr(self):
 
-#   reconstructed Kaiser space; based on correcting for FoG effect only
-#    def ReFoGSpace(self):
-#       radio=1
-#       numgal=150
-#       c=4
-#       n0 = (numgal/(4*np.pi*radio))*(1/(np.log(1+c)-c/(1+c)))
-#       r=np.random.unifor(0,1,size=numgal)
-#       distr = n0/(r/radio)(1+r/radio)**2
-#       dccorr = dc_centro + distr
+        for i in self.labelshmassive[0]:
+            numgal = len(self.clustering.labels_ == (i + 1))
+            c = 1 / 0.052
+            r200 = 117
+            rs = r200 / c
+            n0 = (numgal / (4 * np.pi * rs ** 3)) * (
+                1 / (np.log(1 + c) - c / (1 + c))
+            )
 
-#    Re-real space reconstructed real space; based on correcting redshift
-#    space distortions
-#    def ReRealSpace(self):
-#       llama a ReKaiserSpace + ReFoGSpace
+            bins = np.linspace(0, 5000, 200)
+            r = (
+                (
+                    bins[
+                        1:,
+                    ]
+                    - bins[
+                        :-1,
+                    ]
+                )
+                / 2
+            ) + bins[:-1]
+            distr = n0 / ((r / rs) * (1 + r / rs) ** 2)
+
+            distr = distr / np.sum(distr)
+            ac = np.cumsum(distr)
+
+            v3 = np.random.random(300000)
+            v4 = np.zeros(300000)
+            for i in range(len(ac) - 1):
+                ind = np.where((v3 >= ac[i]) & (v3 < ac[i + 1]))
+                v4[ind] = i + 1
+            v5 = np.zeros(300000)
+            for i in range(300000):
+                v5[i] = (
+                    bins[int(v4[i] + 1)] - bins[int(v4[i])]
+                ) * np.random.random() + bins[int(v4[i])]
+
+    # self.dc=np.random.choice(Sim['DistrVal'],size=numgal)
+
+    #       dccorr = dc_centro + distr
+
+    #    Re-real space reconstructed real space; based on correcting redshift
+    #    space distortions
+    def RealSpace(self):
+        pass
+        # llama a ReKaiserSpace + ReFoGSpace
+
+
 #       rcomovingk = ReKaiserSpace()
 #       rcomovingf = ReFoGSpace()
 #       return rcomovingk + rcomovingf
