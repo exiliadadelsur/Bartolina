@@ -13,7 +13,7 @@ def test_numHalo():
 
     gal = Table.read("resources/SDSS.fits")
     obj = bt.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
-    obj.mclustering()
+    obj.Halos()
     unique_elements, counts_elements = np.unique(
         obj.clustering.labels_, return_counts=True
     )
@@ -25,16 +25,16 @@ def test_hmass():
 
     gal = Table.read("resources/SDSS.fits")
     obj = bt.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
-    obj.mclustering()
-    assert len(obj.hmass) == 24
+    obj.Halos()
+    assert len(obj.labelshmassive[0]) == 25
 
 
 def test_grid3d():
 
     gal = Table.read("resources/SDSS.fits")
     obj = bt.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
-    obj.mclustering()
-    obj.ReKaiserSpace()
+    obj.Halos()
+    obj.Kaisercorr()
     unique_elements, counts_elements = np.unique(
         obj.valingrid, axis=0, return_counts=True
     )
