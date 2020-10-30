@@ -38,7 +38,6 @@ class ReZSpace(object):
             dec=np.array(self.dec) * u.degree,
             distance=np.array(dc) * u.mpc,
         )
-        # coordinates transform
         xyz = np.array([c.cartesian.x, c.cartesian.y, c.cartesian.z]).T
         pesos = 1 + np.arctan(self.z / 0.050)
         self.clustering = DBSCAN(eps=3, min_samples=130)
@@ -80,8 +79,6 @@ class ReZSpace(object):
             hmass[i] = nfw.mass(r200).value
 
         self.labelshmassive = np.where(hmass > self.Mth)
-
-    # reconstructed FoG space; based on correcting for Kaiser effect only
 
     def Kaisercorr(self):
 
@@ -130,6 +127,10 @@ class ReZSpace(object):
                 np.array([zdist]),
             ]
         ).T
+
+        self.rho_h = len(self.xyzcentros) / 1024 ** 3
+        
+
 
         # Halo bias
         # calcular k y P_linear con CAMB
