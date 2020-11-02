@@ -23,6 +23,18 @@ import attr
 
 @attr.s
 class ReZSpace(object):
+    """Real space reconstruction algorithm.
+
+    The algorithm has the following queries implemented:
+    - Halos:
+    - Kaisercorr:
+    - FoGcorr:
+    - RealSpace:
+
+    Parameters
+    ----------
+
+    """
 
     ra = attr.ib()
     dec = attr.ib()
