@@ -5,7 +5,7 @@
 #   Full Text: https://github.com/exiliadadelsur/Bartolina/blob/master/LICENSE
 
 import numpy as np
-import bartolina as bt
+from bartolina import ReZSpace
 from astropy.table import Table
 import pytest
 
@@ -13,8 +13,8 @@ import pytest
 @pytest.fixture
 def obj():
     gal = Table.read("resources/SDSS.fits")
-    btobj = bt.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
-    return btobj
+    bt = ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
+    return bt
 
 
 def test_numHalo(obj):
