@@ -5,39 +5,39 @@
 #   Full Text: https://github.com/exiliadadelsur/Bartolina/blob/master/LICENSE
 
 import numpy as np
-from bartolina import ReZSpace
+import bartolina
 from astropy.table import Table
 import pytest
 
 
 @pytest.fixture
-def obj():
+def bt():
     gal = Table.read("resources/SDSS.fits")
-    bt = ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
-    return bt
+    obj = bartolina.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
+    return obj
 
 
-def test_numHalo(obj):
+def test_numHalo(bt):
 
-    obj.Halos()
+    bt.Halos()
     unique_elements, counts_elements = np.unique(
-        obj.clustering.labels_, return_counts=True
+        bt.clustering.labels_, return_counts=True
     )
     canthalo = np.sum([counts_elements > 150])
     assert canthalo == 15
 
 
-def test_hmass(obj):
+def test_hmass(bt):
 
-    obj.Halos()
-    assert len(obj.labelshmassive[0]) == 25
+    bt.Halos()
+    assert len(bt.labelshmassive[0]) == 25
 
 
-def test_grid3d(obj):
+def test_grid3d(bt):
 
-    obj.Halos()
-    obj.Kaisercorr()
+    bt.Halos()
+    bt.Kaisercorr()
     unique_elements, counts_elements = np.unique(
-        obj.valingrid, axis=0, return_counts=True
+        bt.valingrid, axis=0, return_counts=True
     )
     assert len(unique_elements) == len(counts_elements)
