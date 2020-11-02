@@ -9,11 +9,13 @@ import bartolina as bt
 from astropy.table import Table
 import pytest
 
+
 @pytest.fixture
 def obj():
     gal = Table.read("resources/SDSS.fits")
     btobj = bt.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
     return btobj
+
 
 def test_numHalo(obj):
 
