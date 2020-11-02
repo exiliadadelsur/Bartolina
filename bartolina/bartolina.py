@@ -129,8 +129,6 @@ class ReZSpace(object):
         ).T
 
         self.rho_h = len(self.xyzcentros) / 1024 ** 3
-        
-
 
         # Halo bias
         # calcular k y P_linear con CAMB
