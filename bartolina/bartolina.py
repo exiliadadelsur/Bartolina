@@ -50,6 +50,7 @@ class ReZSpace(object):
 
         self.unique_elements = unique_elements[unique_elements > -1]
         self.xyzcentros = np.empty([len(unique_elements), 3])
+        self.dc_centro = np.empty([len(unique_elements)])
         hmass = np.empty([len(unique_elements)])
         for i in unique_elements:
             v1 = xyz[self.clustering.labels_ == i]
@@ -60,7 +61,7 @@ class ReZSpace(object):
             yradio = np.std(xyz[:, 1])
             zradio = np.std(xyz[:, 2])
             radio = np.sqrt(xradio ** 2 + yradio ** 2 + zradio ** 2)
-            dc_centro = np.sqrt(
+            self.dc_centro[i] = np.sqrt(
                 self.xyzcentros[i, 0] ** 2
                 + self.xyzcentros[i, 1] ** 2
                 + self.xyzcentros[i, 2] ** 2
@@ -68,7 +69,7 @@ class ReZSpace(object):
             redshift = self.z[self.clustering.labels_ == i]
             z_centro = z_at_value(
                 self.cosmo.comoving_distance,
-                dc_centro * u.Mpc,
+                self.dc_centro[i] * u.Mpc,
                 zmin=redshift.min(),
                 zmax=redshift.max(),
             )
@@ -135,8 +136,11 @@ class ReZSpace(object):
     #   reconstructed Kaiser space; based on correcting for FoG effect only
     def FoGcorr(self):
 
+        dcFoGcorr = np.zeros(len(self.clustering.labels_))
+        zFoGcorr = np.zeros(len(self.clustering.labels_))
         for i in self.labelshmassive[0]:
-            numgal = len(self.clustering.labels_ == (i + 1))
+            
+            numgal = np.sum(self.clustering.labels_ == i)
             c = 1 / 0.052
             r200 = 117
             rs = r200 / c
@@ -145,17 +149,7 @@ class ReZSpace(object):
             )
 
             bins = np.linspace(0, 5000, 200)
-            r = (
-                (
-                    bins[
-                        1:,
-                    ]
-                    - bins[
-                        :-1,
-                    ]
-                )
-                / 2
-            ) + bins[:-1]
+            r = ((bins[1:,] - bins[:-1,]) / 2) + bins[:-1]
             distr = n0 / ((r / rs) * (1 + r / rs) ** 2)
 
             distr = distr / np.sum(distr)
@@ -163,26 +157,56 @@ class ReZSpace(object):
 
             v3 = np.random.random(300000)
             v4 = np.zeros(300000)
-            for i in range(len(ac) - 1):
-                ind = np.where((v3 >= ac[i]) & (v3 < ac[i + 1]))
-                v4[ind] = i + 1
+            for j in range(len(ac) - 1):
+                ind = np.where((v3 >= ac[j]) & (v3 < ac[j + 1]))
+                v4[ind] = j + 1
             v5 = np.zeros(300000)
-            for i in range(300000):
-                v5[i] = (
-                    bins[int(v4[i] + 1)] - bins[int(v4[i])]
-                ) * np.random.random() + bins[int(v4[i])]
+            for j in range(300000):
+                v5[j] = (
+                    bins[int(v4[j] + 1)] - bins[int(v4[j])]
+                ) * np.random.random() + bins[int(v4[j])]
 
-    # self.dc=np.random.choice(Sim['DistrVal'],size=numgal)
+            self.dc=np.random.choice(v5,size=numgal)
+            dcFoGcorr[self.clustering.labels_ == i] = (self.dc_centro[i]
+                                                                + self.dc)
+                        
+            v6 = np.zeros(numgal)
+            v7 = dcFoGcorr[self.clustering.labels_ == i]
+            redshift = self.z[self.clustering.labels_ == i]
+            for j in range(numgal):
+                v6[j] = z_at_value(
+                        self.cosmo.comoving_distance,
+                        v7[j] * u.Mpc,
+                        zmin=redshift.min() - 1,
+                        zmax=redshift.max() + 1,
+                        )
+            zFoGcorr[self.clustering.labels_ == i] = v6
+        dcFoGcorr[dcFoGcorr == 0] = self.cosmo.comoving_distance(self.z[dcFoGcorr == 0])
+        zFoGcorr[dcFoGcorr == 0] = self.z[dcFoGcorr == 0]    
 
-    #       dccorr = dc_centro + distr
+        return dcFoGcorr, zFoGcorr
 
     #    Re-real space reconstructed real space; based on correcting redshift
     #    space distortions
     def RealSpace(self):
-        pass
-        # llama a ReKaiserSpace + ReFoGSpace
-
-
-#       rcomovingk = ReKaiserSpace()
-#       rcomovingf = ReFoGSpace()
-#       return rcomovingk + rcomovingf
+        dcFoGcorr, zFoGcorr = self.FoGcorr()
+        dcKaisercorr, zKaisercorr = self.Kaisercorr()
+        
+        dc = dcFoGcorr + dcKaisercorr
+        zcorr = np.zeros(len(self.clustering.labels_))
+        for i in self.labelshmassive[0]:
+            numgal = np.sum(self.clustering.labels_ == i)          
+            v6 = np.zeros(numgal)
+            v7 = dc[self.clustering.labels_ == i]
+            redshift = self.z[self.clustering.labels_ == i]
+            for j in range(numgal):
+                v6[j] = z_at_value(
+                        self.cosmo.comoving_distance,
+                        v7[j] * u.Mpc,
+                        zmin=redshift.min() - 1,
+                        zmax=redshift.max() + 1,
+                        )
+            zcorr[self.clustering.labels_ == i] = v6
+            
+        return dc, zcorr    
+            
