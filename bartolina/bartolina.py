@@ -23,6 +23,18 @@ import attr
 
 @attr.s
 class ReZSpace(object):
+    """Real space reconstruction algorithm.
+
+    The algorithm has the following queries implemented:
+    - Halos:
+    - Kaisercorr:
+    - FoGcorr:
+    - RealSpace:
+
+    Parameters
+    ----------
+
+    """
 
     ra = attr.ib()
     dec = attr.ib()
@@ -38,7 +50,6 @@ class ReZSpace(object):
             dec=np.array(self.dec) * u.degree,
             distance=np.array(dc) * u.mpc,
         )
-        # coordinates transform
         xyz = np.array([c.cartesian.x, c.cartesian.y, c.cartesian.z]).T
         pesos = 1 + np.arctan(self.z / 0.050)
         self.clustering = DBSCAN(eps=3, min_samples=130)
@@ -82,24 +93,46 @@ class ReZSpace(object):
 
         self.labelshmassive = np.where(hmass > self.Mth)
 
-    # reconstructed FoG space; based on correcting for Kaiser effect only
-
     def Kaisercorr(self):
 
         self.xyzcentros = self.xyzcentros[self.labelshmassive]
-        limxsup = self.xyzcentros[:, 0].max()
-        limysup = self.xyzcentros[:, 1].max()
-        limzsup = self.xyzcentros[:, 2].max()
-        limsup = np.max(np.array([limxsup, limysup, limzsup])) + 0.001
-        limxmin = self.xyzcentros[:, 0].min()
-        limymin = self.xyzcentros[:, 1].min()
-        limzmin = self.xyzcentros[:, 2].min()
-        liminf = np.min(np.array([limxmin, limymin, limzmin])) - 0.001
-        bines = np.linspace(liminf, limsup, 1024)
+        inf = np.array(
+            [
+                self.xyzcentros[:, 0].min(),
+                self.xyzcentros[:, 1].min(),
+                self.xyzcentros[:, 2].min(),
+            ]
+        )
+        sup = np.array(
+            [
+                self.xyzcentros[:, 0].max(),
+                self.xyzcentros[:, 1].max(),
+                self.xyzcentros[:, 2].max(),
+            ]
+        )
+        rangeaxis = sup - inf
+        maxaxis = np.argmax(rangeaxis)
+        liminf = np.empty((3))
+        limsup = np.empty((3))
+        for i in range(3):
+            if i == maxaxis:
+                liminf[i] = inf[i] - 50
+                limsup[i] = sup[i] + 50
+            else:
+                liminf[i] = (
+                    inf[i] - (rangeaxis[maxaxis] + 100 - rangeaxis[i]) / 2
+                )
+                limsup[i] = (
+                    sup[i] + (rangeaxis[maxaxis] + 100 - rangeaxis[i]) / 2
+                )
+
+        binesx = np.linspace(liminf[0], limsup[0], 1024)
+        binesy = np.linspace(liminf[1], limsup[1], 1024)
+        binesz = np.linspace(liminf[2], limsup[2], 1024)
         binnum = np.arange(0, 1023)
-        xdist = pd.cut(self.xyzcentros[:, 0], bins=bines, labels=binnum)
-        ydist = pd.cut(self.xyzcentros[:, 1], bins=bines, labels=binnum)
-        zdist = pd.cut(self.xyzcentros[:, 2], bins=bines, labels=binnum)
+        xdist = pd.cut(self.xyzcentros[:, 0], bins=binesx, labels=binnum)
+        ydist = pd.cut(self.xyzcentros[:, 1], bins=binesy, labels=binnum)
+        zdist = pd.cut(self.xyzcentros[:, 2], bins=binesz, labels=binnum)
         self.valingrid = np.array(
             [
                 np.array([xdist]),
@@ -107,6 +140,8 @@ class ReZSpace(object):
                 np.array([zdist]),
             ]
         ).T
+
+        self.rho_h = len(self.xyzcentros) / 1024 ** 3
 
         # Halo bias
         # calcular k y P_linear con CAMB
