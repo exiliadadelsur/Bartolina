@@ -39,3 +39,20 @@ def test_grid3d():
         obj.valingrid, axis=0, return_counts=True
     )
     assert len(unique_elements) == len(counts_elements)
+    
+def test_FoGcorr():
+
+    gal = Table.read("resources/SDSS.fits")
+    obj = bt.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
+    obj.Halos()    
+    dcCorr, zCorr = obj.FoGcorr()      
+    assert ((dcCorr.min()>25) * (dcCorr.max()<890))
+    
+  
+    
+#@pytest.mark.xfail
+#@pytest.mark.xfail(not FLAG, reason=
+#try:
+#    import xyz
+#except:
+#    FLAG=False
