@@ -4,6 +4,8 @@
 # License: MIT
 #   Full Text: https://github.com/exiliadadelsur/Bartolina/blob/master/LICENSE
 
+"""Bartolina : real space reconstruction algorithm for redshift."""
+
 import numpy as np
 import pandas as pd
 from astropy.cosmology import LambdaCDM, z_at_value
@@ -25,14 +27,32 @@ import attr
 class ReZSpace(object):
     """Real space reconstruction algorithm.
 
-    The algorithm has the following queries implemented:
-    - Halos:
-    - Kaisercorr:
-    - FoGcorr:
-    - RealSpace:
+    ...
 
-    Parameters
+    Attributes
     ----------
+    ra : array_like
+         Right ascension astronomy coordinate in decimal degrees.
+    dec : array_like
+          Declination astronomy coordinate in decimal degrees.
+    z : array_like
+        Observational redshift.
+    cosmo : astropy class
+            Astropy class that describe the cosmology to use.
+    Mth : float
+          The threshold mass that determines massive halos.
+
+    Methods
+    -------
+    Halos()
+        Find massive dark matter halos and cartesian coordinates of his
+        centers. Necesary for all the other methods.
+    Kaisercorr()
+        Corrects the Kaiser effect only.
+    FoGcorr()
+        Corrects the Finger of God effect only.
+    RealSpace()
+        Corrects both effects (Kaiser and FoG).
 
     """
 
@@ -43,7 +63,12 @@ class ReZSpace(object):
     Mth = attr.ib(default=(10 ** 12.5))
 
     def Halos(self):
+        """Find massive dark matter halos.
 
+        Find massive dark matter halos and cartesian coordinates of his
+        centers. Necesary for all the other methods.
+
+        """
         dc = self.cosmo.comoving_distance(self.z)
         c = SkyCoord(
             ra=np.array(self.ra) * u.degree,
@@ -94,7 +119,7 @@ class ReZSpace(object):
         self.labelshmassive = np.where(hmass > self.Mth)
 
     def Kaisercorr(self):
-
+        """Corrects the Kaiser effect."""
         self.xyzcentros = self.xyzcentros[self.labelshmassive]
         inf = np.array(
             [
@@ -169,12 +194,12 @@ class ReZSpace(object):
         # return rcomovingk
 
     #   reconstructed Kaiser space; based on correcting for FoG effect only
-    def FoGcorr(self):
-
+    def FoGcorr(self, seedvalue=None):
+        """Corrects the Finger of God effect only."""
         dcFoGcorr = np.zeros(len(self.clustering.labels_))
         zFoGcorr = np.zeros(len(self.clustering.labels_))
         for i in self.labelshmassive[0]:
-            
+
             numgal = np.sum(self.clustering.labels_ == i)
             c = 1 / 0.052
             r200 = 117
@@ -184,12 +209,23 @@ class ReZSpace(object):
             )
 
             bins = np.linspace(0, 5000, 200)
-            r = ((bins[1:,] - bins[:-1,]) / 2) + bins[:-1]
+            r = (
+                (
+                    bins[
+                        1:,
+                    ]
+                    - bins[
+                        :-1,
+                    ]
+                )
+                / 2
+            ) + bins[:-1]
             distr = n0 / ((r / rs) * (1 + r / rs) ** 2)
 
             distr = distr / np.sum(distr)
             ac = np.cumsum(distr)
-
+            if seedvalue is not None:
+                np.random.seed(seedvalue)
             v3 = np.random.random(300000)
             v4 = np.zeros(300000)
             for j in range(len(ac) - 1):
@@ -201,47 +237,50 @@ class ReZSpace(object):
                     bins[int(v4[j] + 1)] - bins[int(v4[j])]
                 ) * np.random.random() + bins[int(v4[j])]
 
-            self.dc=np.random.choice(v5,size=numgal)
-            dcFoGcorr[self.clustering.labels_ == i] = (self.dc_centro[i]
-                                                                + self.dc)
-                        
+            self.dc = np.random.choice(v5, size=numgal)
+            dcFoGcorr[self.clustering.labels_ == i] = (
+                self.dc_centro[i] + self.dc
+            )
+
             v6 = np.zeros(numgal)
             v7 = dcFoGcorr[self.clustering.labels_ == i]
             redshift = self.z[self.clustering.labels_ == i]
             for j in range(numgal):
                 v6[j] = z_at_value(
-                        self.cosmo.comoving_distance,
-                        v7[j] * u.Mpc,
-                        zmin=redshift.min() - 1,
-                        zmax=redshift.max() + 1,
-                        )
+                    self.cosmo.comoving_distance,
+                    v7[j] * u.Mpc,
+                    zmin=redshift.min() - 1,
+                    zmax=redshift.max() + 1,
+                )
             zFoGcorr[self.clustering.labels_ == i] = v6
-        dcFoGcorr[dcFoGcorr == 0] = self.cosmo.comoving_distance(self.z[dcFoGcorr == 0])
-        zFoGcorr[dcFoGcorr == 0] = self.z[dcFoGcorr == 0]    
+        dcFoGcorr[dcFoGcorr == 0] = self.cosmo.comoving_distance(
+            self.z[dcFoGcorr == 0]
+        )
+        zFoGcorr[dcFoGcorr == 0] = self.z[dcFoGcorr == 0]
 
         return dcFoGcorr, zFoGcorr
 
     #    Re-real space reconstructed real space; based on correcting redshift
     #    space distortions
     def RealSpace(self):
+        """Corrects Kaiser and FoG effect."""
         dcFoGcorr, zFoGcorr = self.FoGcorr()
         dcKaisercorr, zKaisercorr = self.Kaisercorr()
-        
+
         dc = dcFoGcorr + dcKaisercorr
         zcorr = np.zeros(len(self.clustering.labels_))
         for i in self.labelshmassive[0]:
-            numgal = np.sum(self.clustering.labels_ == i)          
+            numgal = np.sum(self.clustering.labels_ == i)
             v6 = np.zeros(numgal)
             v7 = dc[self.clustering.labels_ == i]
             redshift = self.z[self.clustering.labels_ == i]
             for j in range(numgal):
                 v6[j] = z_at_value(
-                        self.cosmo.comoving_distance,
-                        v7[j] * u.Mpc,
-                        zmin=redshift.min() - 1,
-                        zmax=redshift.max() + 1,
-                        )
+                    self.cosmo.comoving_distance,
+                    v7[j] * u.Mpc,
+                    zmin=redshift.min() - 1,
+                    zmax=redshift.max() + 1,
+                )
             zcorr[self.clustering.labels_ == i] = v6
-            
-        return dc, zcorr    
-            
+
+        return dc, zcorr
