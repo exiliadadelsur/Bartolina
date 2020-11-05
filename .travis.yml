@@ -13,4 +13,11 @@ matrix:
           env: TOXENV=style
           dist: xenial
 
+        - python: 3.8
+          env: TOXENV=coverage
+          dist: xenial
+
+        - python: 3.8
+          env: TOXENV=docstyle
+          dist: xenial
 
