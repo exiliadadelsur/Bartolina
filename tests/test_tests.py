@@ -13,8 +13,8 @@ import pytest
 @pytest.fixture
 def bt():
     gal = Table.read("resources/SDSS.fits")
-    obj = bartolina.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
-    return obj
+    rzs = bartolina.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
+    return rzs
 
 
 def test_numHalo(bt):
@@ -41,20 +41,10 @@ def test_grid3d(bt):
         bt.valingrid, axis=0, return_counts=True
     )
     assert len(unique_elements) == len(counts_elements)
-    
-def test_FoGcorr():
 
-    gal = Table.read("resources/SDSS.fits")
-    obj = bt.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
-    obj.Halos()    
-    dcCorr, zCorr = obj.FoGcorr()      
-    assert ((dcCorr.min()>25) * (dcCorr.max()<890))
-    
-  
-    
-#@pytest.mark.xfail
-#@pytest.mark.xfail(not FLAG, reason=
-#try:
-#    import xyz
-#except:
-#    FLAG=False
+
+def test_FoGcorr(bt):
+
+    bt.Halos()
+    dcCorr, zCorr = bt.FoGcorr(1234)
+    assert dcCorr.max() < 1120
