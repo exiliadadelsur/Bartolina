@@ -20,7 +20,9 @@ You need Python 3.8 to run Bartolina
 
 Clone this repo and then inside the local directory execute
 
-* $ pip install -e .
+```
+$ pip install -e .
+```
 
 ## License
 
