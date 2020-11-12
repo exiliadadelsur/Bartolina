@@ -13,13 +13,13 @@ import pytest
 @pytest.fixture
 def bt():
     gal = Table.read("resources/SDSS.fits")
-    rzs = bartolina.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
+    rzs = bartolina.re_z_space(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
     return rzs
 
 
 def test_numHalo(bt):
 
-    bt.Halos()
+    bt.aalos()
     unique_elements, counts_elements = np.unique(
         bt.clustering.labels_, return_counts=True
     )
@@ -29,14 +29,14 @@ def test_numHalo(bt):
 
 def test_hmass(bt):
 
-    bt.Halos()
+    bt.aalos()
     assert len(bt.labelshmassive[0]) == 25
 
 
 def test_grid3d(bt):
 
-    bt.Halos()
-    bt.Kaisercorr()
+    bt.aalos()
+    bt.kaisercorr()
     unique_elements, counts_elements = np.unique(
         bt.valingrid, axis=0, return_counts=True
     )
@@ -45,6 +45,6 @@ def test_grid3d(bt):
 
 def test_FoGcorr(bt):
 
-    bt.Halos()
-    dcCorr, zCorr = bt.FoGcorr(1234)
+    bt.halos()
+    dcCorr, zCorr = bt.fogcorr(seedvalue=1234)
     assert dcCorr.max() < 1120
