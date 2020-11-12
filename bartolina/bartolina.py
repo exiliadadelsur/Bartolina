@@ -24,7 +24,7 @@ import attr
 
 
 @attr.s
-class ReZSpace(object):
+class re_z_space(object):
     """Real space reconstruction algorithm.
 
     ...
@@ -40,7 +40,7 @@ class ReZSpace(object):
     cosmo : astropy class
             Astropy class that describe the cosmology to use.
     Mth : float
-          The threshold mass that determines massive halos.
+          The threshold mass that determines massive halos in solar mass.
 
     Methods
     -------
@@ -62,13 +62,14 @@ class ReZSpace(object):
     cosmo = attr.ib(default=LambdaCDM(H0=100, Om0=0.27, Ode0=0.73))
     Mth = attr.ib(default=(10 ** 12.5))
 
-    def Halos(self):
+    def halos(self):
         """Find massive dark matter halos.
 
         Find massive dark matter halos and cartesian coordinates of his
         centers. Necesary for all the other methods.
 
         """
+        # cartesian coordinates for galaxies
         dc = self.cosmo.comoving_distance(self.z)
         c = SkyCoord(
             ra=np.array(self.ra) * u.degree,
@@ -76,27 +77,30 @@ class ReZSpace(object):
             distance=np.array(dc) * u.mpc,
         )
         xyz = np.array([c.cartesian.x, c.cartesian.y, c.cartesian.z]).T
+        # finding group of galaxies
         pesos = 1 + np.arctan(self.z / 0.050)
-        self.clustering = DBSCAN(eps=3, min_samples=130)
+        self.clustering = DBSCAN(eps=5, min_samples=130)
         self.clustering.fit(xyz, sample_weight=pesos)
-
         unique_elements, counts_elements = np.unique(
             self.clustering.labels_, return_counts=True
         )
-
         self.unique_elements = unique_elements[unique_elements > -1]
+        # mass and center, for each group
         self.xyzcentros = np.empty([len(unique_elements), 3])
         self.dc_centro = np.empty([len(unique_elements)])
         hmass = np.empty([len(unique_elements)])
         for i in unique_elements:
             v1 = xyz[self.clustering.labels_ == i]
+            # center
             self.xyzcentros[i, 0] = np.mean(v1[:, 0])
             self.xyzcentros[i, 1] = np.mean(v1[:, 1])
             self.xyzcentros[i, 2] = np.mean(v1[:, 2])
+            # radio
             xradio = np.std(xyz[:, 0])
             yradio = np.std(xyz[:, 1])
             zradio = np.std(xyz[:, 2])
             radio = np.sqrt(xradio ** 2 + yradio ** 2 + zradio ** 2)
+            # redshift of center
             self.dc_centro[i] = np.sqrt(
                 self.xyzcentros[i, 0] ** 2
                 + self.xyzcentros[i, 1] ** 2
@@ -109,16 +113,19 @@ class ReZSpace(object):
                 zmin=redshift.min(),
                 zmax=redshift.max(),
             )
+            # halo mass with NFW
+            # NFW takes: halo radius, halo concentration parameter,
+            # halo redshift, quantity consider, cosmology
             cparam = 4
             nfw = NFW(
                 radio, 4, z_centro, size_type="radius", cosmology=self.cosmo
             )
             r200 = cparam * radio
             hmass[i] = nfw.mass(r200).value
-
+        # selec massive halos
         self.labelshmassive = np.where(hmass > self.Mth)
 
-    def Kaisercorr(self):
+    def kaisercorr(self):
         """Corrects the Kaiser effect."""
         self.xyzcentros = self.xyzcentros[self.labelshmassive]
         inf = np.array(
@@ -194,7 +201,7 @@ class ReZSpace(object):
         # return rcomovingk
 
     #   reconstructed Kaiser space; based on correcting for FoG effect only
-    def FoGcorr(self, seedvalue=None):
+    def fogcorr(self, seedvalue=None):
         """Corrects the Finger of God effect only."""
         dcFoGcorr = np.zeros(len(self.clustering.labels_))
         zFoGcorr = np.zeros(len(self.clustering.labels_))
@@ -224,8 +231,8 @@ class ReZSpace(object):
 
             distr = distr / np.sum(distr)
             ac = np.cumsum(distr)
-            if seedvalue is not None:
-                np.random.seed(seedvalue)
+
+            np.random.RandomState(seed=seedvalue)
             v3 = np.random.random(300000)
             v4 = np.zeros(300000)
             for j in range(len(ac) - 1):
@@ -262,12 +269,12 @@ class ReZSpace(object):
 
     #    Re-real space reconstructed real space; based on correcting redshift
     #    space distortions
-    def RealSpace(self):
+    def realspace(self):
         """Corrects Kaiser and FoG effect."""
-        dcFoGcorr, zFoGcorr = self.FoGcorr()
-        dcKaisercorr, zKaisercorr = self.Kaisercorr()
+        dcfogcorr, zfogcorr = self.fogcorr()
+        dckaisercorr, zkaisercorr = self.kaisercorr()
 
-        dc = dcFoGcorr + dcKaisercorr
+        dc = dcfogcorr + dckaisercorr
         zcorr = np.zeros(len(self.clustering.labels_))
         for i in self.labelshmassive[0]:
             numgal = np.sum(self.clustering.labels_ == i)
