@@ -1,5 +1,12 @@
 language: python
-sudo: False
+sudo: true
+
+before_install:
+  - sudo wget ftp.wayne.edu/gnu/gsl/gsl-2.6.tar.gz
+  - cd gsl-2.6
+  - ./configure
+  - make
+  - make install
 
 install:
     - pip install tox
@@ -9,6 +16,10 @@ script:
 
 matrix:
     include:
+        - python: 3.8
+          env: TOXENV=testenv
+          dist: xenial
+
         - python: 3.8
           env: TOXENV=style
           dist: xenial
@@ -21,3 +32,6 @@ matrix:
           env: TOXENV=docstyle
           dist: xenial
 
+        - python: 3.8
+          env: TOXENV=docs
+          dist: xenial
