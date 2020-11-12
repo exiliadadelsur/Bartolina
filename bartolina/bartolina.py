@@ -11,14 +11,14 @@ import pandas as pd
 from astropy.cosmology import LambdaCDM, z_at_value
 from astropy import units as u
 from astropy.coordinates import SkyCoord
+from astropy import constants as const
 
 from sklearn.cluster import DBSCAN
 from NFW.nfw import NFW
 
-
-# from cluster_toolkit import bias
-# import camb
-# from camb import model
+from cluster_toolkit import bias
+import camb
+from camb import model
 
 import attr
 
@@ -88,7 +88,7 @@ class re_z_space(object):
         # mass and center, for each group
         self.xyzcentros = np.empty([len(unique_elements), 3])
         self.dc_centro = np.empty([len(unique_elements)])
-        hmass = np.empty([len(unique_elements)])
+        self.hmass = np.empty([len(unique_elements)])
         for i in unique_elements:
             v1 = xyz[self.clustering.labels_ == i]
             # center
@@ -121,9 +121,11 @@ class re_z_space(object):
                 radio, 4, z_centro, size_type="radius", cosmology=self.cosmo
             )
             r200 = cparam * radio
-            hmass[i] = nfw.mass(r200).value
-        # selec massive halos
-        self.labelshmassive = np.where(hmass > self.Mth)
+
+            self.hmass[i] = nfw.mass(r200).value
+
+        self.labelshmassive = np.where(self.hmass > self.Mth)
+        # self.hmass = np.where(self.hmass > self.Mth)
 
     def kaisercorr(self):
         """Corrects the Kaiser effect."""
@@ -144,8 +146,8 @@ class re_z_space(object):
         )
         rangeaxis = sup - inf
         maxaxis = np.argmax(rangeaxis)
-        liminf = np.empty((3))
-        limsup = np.empty((3))
+        liminf = np.zeros((3))
+        limsup = np.zeros((3))
         for i in range(3):
             if i == maxaxis:
                 liminf[i] = inf[i] - 50
@@ -158,10 +160,10 @@ class re_z_space(object):
                     sup[i] + (rangeaxis[maxaxis] + 100 - rangeaxis[i]) / 2
                 )
 
-        binesx = np.linspace(liminf[0], limsup[0], 1024)
-        binesy = np.linspace(liminf[1], limsup[1], 1024)
-        binesz = np.linspace(liminf[2], limsup[2], 1024)
-        binnum = np.arange(0, 1023)
+        binesx = np.linspace(liminf[0], limsup[0], 1025)
+        binesy = np.linspace(liminf[1], limsup[1], 1025)
+        binesz = np.linspace(liminf[2], limsup[2], 1025)
+        binnum = np.arange(0, 1024)
         xdist = pd.cut(self.xyzcentros[:, 0], bins=binesx, labels=binnum)
         ydist = pd.cut(self.xyzcentros[:, 1], bins=binesy, labels=binnum)
         zdist = pd.cut(self.xyzcentros[:, 2], bins=binesz, labels=binnum)
@@ -173,32 +175,47 @@ class re_z_space(object):
             ]
         ).T
 
-        self.rho_h = len(self.xyzcentros) / 1024 ** 3
-
         # Halo bias
         # calcular k y P_linear con CAMB
         # cosmología
-        # pars = camb.CAMBparams()
-        # pars.set_cosmology(self.H0, ombh2=0.022, omch2=0.122)
-        # pars.set_dark_energy(w=-1.0)
-        # pars.InitPower.set_params(ns=0.965)
-        # pars.set_matter_power(redshifts=[0.0, 0.8], kmax=2.0)
+        pars = camb.CAMBparams()
+        pars.set_cosmology(self.H0, ombh2=0.022, omch2=0.122)
+        pars.set_dark_energy(w=-1.0)
+        pars.InitPower.set_params(ns=0.965)
+        pars.set_matter_power(redshifts=[0.0, 0.8], kmax=2.0)
         # calcula plineal
-        # pars.NonLinear = model.NonLinear_none
-        # results = camb.get_results(pars)
-        # kh, z, pk = results.get_matter_power_spectrum(minkh=1e-4, maxkh=1,
-        #                                                 npoints=1000)
-        # bhm = bias.bias_at_M(self.Mth, kh, pk, self.omega_m)
-        # Mass density contrast
-        # deltah =
-        # Calculo de f
-        # f = self.omega_m ** 0.6 + 1 / 70 * self.omega_lambda *
-        # (1 + self.omega_m)
-        # ReKaiserZ
-        # zk = (self.z - v/const.c) / 1 + v/const.c
-        # Comoving distance
-        # rcomovingk = calculo de distancia comoving a partir de zk
-        # return rcomovingk
+        pars.NonLinear = model.NonLinear_none
+        results = camb.get_results(pars)
+        kh, z, pk = results.get_matter_power_spectrum(
+            minkh=1e-4, maxkh=1, npoints=1000
+        )
+        bhm = bias.bias_at_M(self.Mth, kh, pk, self.omega_m)
+
+        x = np.arange(0, 1024)
+        cube = np.array(np.meshgrid(x, x, x)).T.reshape(-1, 3)
+
+        indexcube = np.zeros(1024 ** 3)
+        for i in range(len(self.valingrid)):
+            var = cube - self.valingrid[i]
+            idcellsempty = np.where(
+                (var[:, 0] == 0) & (var[:, 1] == 0) & (var[:, 2] == 0)
+            )
+            indexcube[idcellsempty] = self.hmass[i]
+
+        self.rho_h = np.sum(self.hmass) / (1024 ** 3)
+        self.delta = np.where(indexcube == 0, self.rho_h, indexcube)
+
+        f = self.cosmo.Om0 ** 0.6 + 1 / 70 * self.cosmo.Ode0 * (
+            1 + self.cosmo.Om0
+        )
+
+        v = np.fft.fft(self.cosmo.H0 * 1 * f * np.fft.fft(self.delta) / bhm)
+
+    # ReKaiserZ
+    # zk = (self.z - v/const.c) / 1 + v/const.c
+    # Comoving distance
+    # rcomovingk = calculo de distancia comoving a partir de zk
+    # return rcomovingk
 
     #   reconstructed Kaiser space; based on correcting for FoG effect only
     def fogcorr(self, seedvalue=None):
