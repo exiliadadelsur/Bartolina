@@ -10,7 +10,7 @@ from astropy.table import Table
 import pytest
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def bt():
     gal = Table.read("resources/SDSS.fits")
     rzs = bartolina.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
