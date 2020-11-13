@@ -24,7 +24,7 @@ import attr
 
 
 @attr.s
-class re_z_space(object):
+class ReZSpace(object):
     """Real space reconstruction algorithm.
 
     ...

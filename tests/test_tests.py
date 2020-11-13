@@ -13,7 +13,7 @@ import pytest
 @pytest.fixture(scope="session")
 def bt():
     gal = Table.read("resources/SDSS.fits")
-    rzs = bartolina.re_z_space(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
+    rzs = bartolina.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
     return rzs
 
 
