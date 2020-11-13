@@ -30,7 +30,7 @@ This project is licensed under the MIT License - see the [LICENSE](https://githu
 
 ## Authors
 
-Noelia Rocío Perez, Claudio Antonio Lopez Cortez
+Noelia Rocío Perez and Claudio Antonio Lopez Cortez
 
 
 

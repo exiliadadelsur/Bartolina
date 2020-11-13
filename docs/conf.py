@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "Bartolina"
-copyright = "2020, Noelia Rocío Perez"
-author = "Noelia Rocío Perez, Claudio Antonio Lopez Cortez"
+copyright = "2020, Noelia Rocío Perez and Claudio Antonio Lopez Cortez"
+author = "Noelia Rocío Perez and Claudio Antonio Lopez Cortez"
 
 # The full version, including alpha/beta/rc tags
 release = "0.0.1"
