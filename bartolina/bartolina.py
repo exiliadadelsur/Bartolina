@@ -211,8 +211,13 @@ class re_z_space(object):
 
         v = np.fft.fft(self.cosmo.H0 * 1 * f * np.fft.fft(self.delta) / bhm)
 
-    # ReKaiserZ
-    # zk = (self.z - v/const.c) / 1 + v/const.c
+        zcor = np.zeros((len(self.clustering.labels_)))
+        
+        for i in self.unique_elements:
+            masc = [self.clustering.labels_ == i]
+            zcor[masc] = ( self.z[masc] - v[i] / const.c.value ) / (
+                1 + v[i] / const.c.value)
+            
     # Comoving distance
     # rcomovingk = calculo de distancia comoving a partir de zk
     # return rcomovingk
