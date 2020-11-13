@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath(".."))
 
 project = "Bartolina"
 copyright = "2020, Noelia Rocío Perez"
-author = "Noelia Rocío Perez"
+author = "Noelia Rocío Perez, Claudio Antonio Lopez Cortez"
 
 # The full version, including alpha/beta/rc tags
 release = "0.0.1"
