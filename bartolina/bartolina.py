@@ -78,38 +78,38 @@ class ReZSpace(object):
         )
         xyz = np.array([c.cartesian.x, c.cartesian.y, c.cartesian.z]).T
         # finding group of galaxies
-        pesos = 1 + np.arctan(self.z / 0.050)
+        weights = 1 + np.arctan(self.z / 0.050)
         self.clustering = DBSCAN(eps=5, min_samples=130)
-        self.clustering.fit(xyz, sample_weight=pesos)
+        self.clustering.fit(xyz, sample_weight=weights)
         unique_elements, counts_elements = np.unique(
             self.clustering.labels_, return_counts=True
         )
         self.unique_elements = unique_elements[unique_elements > -1]
         # mass and center, for each group
-        self.xyzcentros = np.empty([len(unique_elements), 3])
-        self.dc_centro = np.empty([len(unique_elements)])
+        self.xyzcenters = np.empty([len(unique_elements), 3])
+        self.dc_center = np.empty([len(unique_elements)])
         self.hmass = np.empty([len(unique_elements)])
         for i in unique_elements:
             v1 = xyz[self.clustering.labels_ == i]
             # center
-            self.xyzcentros[i, 0] = np.mean(v1[:, 0])
-            self.xyzcentros[i, 1] = np.mean(v1[:, 1])
-            self.xyzcentros[i, 2] = np.mean(v1[:, 2])
-            # radio
-            xradio = np.std(xyz[:, 0])
-            yradio = np.std(xyz[:, 1])
-            zradio = np.std(xyz[:, 2])
-            radio = np.sqrt(xradio ** 2 + yradio ** 2 + zradio ** 2)
+            self.xyzcenters[i, 0] = np.mean(v1[:, 0])
+            self.xyzcenters[i, 1] = np.mean(v1[:, 1])
+            self.xyzcenters[i, 2] = np.mean(v1[:, 2])
+            # radius
+            xradius = np.std(xyz[:, 0])
+            yradius = np.std(xyz[:, 1])
+            zradius = np.std(xyz[:, 2])
+            radius = np.sqrt(xradius ** 2 + yradius ** 2 + zradius ** 2)
             # redshift of center
-            self.dc_centro[i] = np.sqrt(
-                self.xyzcentros[i, 0] ** 2
-                + self.xyzcentros[i, 1] ** 2
-                + self.xyzcentros[i, 2] ** 2
+            self.dc_center[i] = np.sqrt(
+                self.xyzcenters[i, 0] ** 2
+                + self.xyzcenters[i, 1] ** 2
+                + self.xyzcenters[i, 2] ** 2
             )
             redshift = self.z[self.clustering.labels_ == i]
-            z_centro = z_at_value(
+            z_center = z_at_value(
                 self.cosmo.comoving_distance,
-                self.dc_centro[i] * u.Mpc,
+                self.dc_center[i] * u.Mpc,
                 zmin=redshift.min(),
                 zmax=redshift.max(),
             )
@@ -118,9 +118,9 @@ class ReZSpace(object):
             # halo redshift, quantity consider, cosmology
             cparam = 4
             nfw = NFW(
-                radio, 4, z_centro, size_type="radius", cosmology=self.cosmo
+                radius, 4, z_center, size_type="radius", cosmology=self.cosmo
             )
-            r200 = cparam * radio
+            r200 = cparam * radius
 
             self.hmass[i] = nfw.mass(r200).value
 
@@ -129,19 +129,19 @@ class ReZSpace(object):
 
     def kaisercorr(self):
         """Corrects the Kaiser effect."""
-        self.xyzcentros = self.xyzcentros[self.labelshmassive]
+        self.xyzcenters = self.xyzcenters[self.labelshmassive]
         inf = np.array(
             [
-                self.xyzcentros[:, 0].min(),
-                self.xyzcentros[:, 1].min(),
-                self.xyzcentros[:, 2].min(),
+                self.xyzcenters[:, 0].min(),
+                self.xyzcenters[:, 1].min(),
+                self.xyzcenters[:, 2].min(),
             ]
         )
         sup = np.array(
             [
-                self.xyzcentros[:, 0].max(),
-                self.xyzcentros[:, 1].max(),
-                self.xyzcentros[:, 2].max(),
+                self.xyzcenters[:, 0].max(),
+                self.xyzcenters[:, 1].max(),
+                self.xyzcenters[:, 2].max(),
             ]
         )
         rangeaxis = sup - inf
@@ -164,9 +164,9 @@ class ReZSpace(object):
         binesy = np.linspace(liminf[1], limsup[1], 1025)
         binesz = np.linspace(liminf[2], limsup[2], 1025)
         binnum = np.arange(0, 1024)
-        xdist = pd.cut(self.xyzcentros[:, 0], bins=binesx, labels=binnum)
-        ydist = pd.cut(self.xyzcentros[:, 1], bins=binesy, labels=binnum)
-        zdist = pd.cut(self.xyzcentros[:, 2], bins=binesz, labels=binnum)
+        xdist = pd.cut(self.xyzcenters[:, 0], bins=binesx, labels=binnum)
+        ydist = pd.cut(self.xyzcenters[:, 1], bins=binesy, labels=binnum)
+        zdist = pd.cut(self.xyzcenters[:, 2], bins=binesz, labels=binnum)
         self.valingrid = np.array(
             [
                 np.array([xdist]),
@@ -268,7 +268,7 @@ class ReZSpace(object):
 
             self.dc = np.random.choice(v5, size=numgal)
             dcFoGcorr[self.clustering.labels_ == i] = (
-                self.dc_centro[i] + self.dc
+                self.dc_center[i] + self.dc
             )
 
             v6 = np.zeros(numgal)
