@@ -88,7 +88,7 @@ class ReZSpace(object):
         # mass and center, for each group
         self.xyzcenters = np.empty([len(unique_elements), 3])
         self.dc_center = np.empty([len(unique_elements)])
-        self.hmass = np.empty([len(unique_elements)])
+        self.mass = np.empty([len(unique_elements)])
         for i in unique_elements:
             v1 = xyz[self.clustering.labels_ == i]
             # center
@@ -122,10 +122,10 @@ class ReZSpace(object):
             )
             r200 = cparam * radius
 
-            self.hmass[i] = nfw.mass(r200).value
+            self.mass[i] = nfw.mass(r200).value
 
-        self.labelshmassive = np.where(self.hmass > self.Mth)
-        # self.hmass = np.where(self.hmass > self.Mth)
+        self.labelshmassive = np.where(self.mass > self.Mth)
+        self.mass = self.mass[self.labelshmassive]
 
     def kaisercorr(self):
         """Corrects the Kaiser effect."""
@@ -200,9 +200,9 @@ class ReZSpace(object):
             idcellsempty = np.where(
                 (var[:, 0] == 0) & (var[:, 1] == 0) & (var[:, 2] == 0)
             )
-            indexcube[idcellsempty] = self.hmass[i]
+            indexcube[idcellsempty] = self.mass[i]
 
-        self.rho_h = np.sum(self.hmass) / (1024 ** 3)
+        self.rho_h = np.sum(self.mass) / (1024 ** 3)
         self.delta = np.where(indexcube == 0, self.rho_h, indexcube)
 
         f = self.cosmo.Om0 ** 0.6 + 1 / 70 * self.cosmo.Ode0 * (
@@ -211,22 +211,23 @@ class ReZSpace(object):
 
         v = np.fft.fft(self.cosmo.H0 * 1 * f * np.fft.fft(self.delta) / bhm)
 
-        zcor = np.zeros((len(self.clustering.labels_)))
-        
+        zkaisercorr = np.zeros((len(self.clustering.labels_)))
+
         for i in self.unique_elements:
             masc = [self.clustering.labels_ == i]
-            zcor[masc] = ( self.z[masc] - v[i] / const.c.value ) / (
-                1 + v[i] / const.c.value)
-            
-    # Comoving distance
-    # rcomovingk = calculo de distancia comoving a partir de zk
-    # return rcomovingk
+            zkaisercorr[masc] = (self.z[masc] - v[i] / const.c.value) / (
+                1 + v[i] / const.c.value
+            )
+
+        dckaisercorr = self.cosmo.comoving_distance(zkaisercorr)
+
+        return dckaisercorr, zkaisercorr
 
     #   reconstructed Kaiser space; based on correcting for FoG effect only
     def fogcorr(self, seedvalue=None):
         """Corrects the Finger of God effect only."""
-        dcFoGcorr = np.zeros(len(self.clustering.labels_))
-        zFoGcorr = np.zeros(len(self.clustering.labels_))
+        dcfogcorr = np.zeros(len(self.clustering.labels_))
+        zfogcorr = np.zeros(len(self.clustering.labels_))
         for i in self.labelshmassive[0]:
 
             numgal = np.sum(self.clustering.labels_ == i)
@@ -267,12 +268,12 @@ class ReZSpace(object):
                 ) * np.random.random() + bins[int(v4[j])]
 
             self.dc = np.random.choice(v5, size=numgal)
-            dcFoGcorr[self.clustering.labels_ == i] = (
+            dcfogcorr[self.clustering.labels_ == i] = (
                 self.dc_center[i] + self.dc
             )
 
             v6 = np.zeros(numgal)
-            v7 = dcFoGcorr[self.clustering.labels_ == i]
+            v7 = dcfogcorr[self.clustering.labels_ == i]
             redshift = self.z[self.clustering.labels_ == i]
             for j in range(numgal):
                 v6[j] = z_at_value(
@@ -281,13 +282,13 @@ class ReZSpace(object):
                     zmin=redshift.min() - 1,
                     zmax=redshift.max() + 1,
                 )
-            zFoGcorr[self.clustering.labels_ == i] = v6
-        dcFoGcorr[dcFoGcorr == 0] = self.cosmo.comoving_distance(
-            self.z[dcFoGcorr == 0]
+            zfogcorr[self.clustering.labels_ == i] = v6
+        dcfogcorr[dcfogcorr == 0] = self.cosmo.comoving_distance(
+            self.z[dcfogcorr == 0]
         )
-        zFoGcorr[dcFoGcorr == 0] = self.z[dcFoGcorr == 0]
+        zfogcorr[dcfogcorr == 0] = self.z[dcfogcorr == 0]
 
-        return dcFoGcorr, zFoGcorr
+        return dcfogcorr, zfogcorr
 
     #    Re-real space reconstructed real space; based on correcting redshift
     #    space distortions
