@@ -19,7 +19,7 @@ def bt():
 
 def test_numHalo(bt):
 
-    bt.aalos()
+    bt.halos()
     unique_elements, counts_elements = np.unique(
         bt.clustering.labels_, return_counts=True
     )
@@ -29,13 +29,13 @@ def test_numHalo(bt):
 
 def test_hmass(bt):
 
-    bt.aalos()
+    bt.halos()
     assert len(bt.labelshmassive[0]) == 25
 
 
 def test_grid3d(bt):
 
-    bt.aalos()
+    bt.halos()
     bt.kaisercorr()
     unique_elements, counts_elements = np.unique(
         bt.valingrid, axis=0, return_counts=True
