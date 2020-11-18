@@ -3,6 +3,7 @@ sudo: true
 
 before_install:
   - sudo wget ftp.wayne.edu/gnu/gsl/gsl-2.6.tar.gz
+  - tar -xzvf gsl-2.6.tar.gz
   - cd gsl-2.6
   - ./configure
   - make
