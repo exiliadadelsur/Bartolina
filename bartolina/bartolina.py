@@ -6,25 +6,29 @@
 
 """Bartolina : real space reconstruction algorithm for redshift."""
 
-import numpy as np
-import pandas as pd
-from astropy.cosmology import LambdaCDM, z_at_value
+from astropy import constants as const
 from astropy import units as u
 from astropy.coordinates import SkyCoord
-from astropy import constants as const
-
-from sklearn.cluster import DBSCAN
-from NFW.nfw import NFW
-
-from cluster_toolkit import bias
-import camb
-from camb import model
+from astropy.cosmology import LambdaCDM, z_at_value
 
 import attr
 
+import camb
+from camb import model
+
+from cluster_toolkit import bias
+
+from halotools.empirical_models import NFWProfile
+
+import numpy as np
+
+import pandas as pd
+
+from sklearn.cluster import DBSCAN
+
 
 @attr.s
-class re_z_space(object):
+class ReZSpace(object):
     """Real space reconstruction algorithm.
 
     ...
@@ -56,11 +60,81 @@ class re_z_space(object):
 
     """
 
+    # User input params
     ra = attr.ib()
     dec = attr.ib()
     z = attr.ib()
     cosmo = attr.ib(default=LambdaCDM(H0=100, Om0=0.27, Ode0=0.73))
     Mth = attr.ib(default=(10 ** 12.5))
+    delta_c = attr.ib(default="200m")
+
+    # ========================================================================
+    # Internal methods
+    # ========================================================================
+
+    def _xyzcoordinates(self):
+
+        dc = self.cosmo.comoving_distance(self.z)
+        c = SkyCoord(
+            ra=np.array(self.ra) * u.degree,
+            dec=np.array(self.dec) * u.degree,
+            distance=np.array(dc) * u.mpc,
+        )
+        xyz = np.array([c.cartesian.x, c.cartesian.y, c.cartesian.z]).T
+        return xyz
+
+    def _groups(self, xyz):
+
+        pesos = self.z * 100
+        self.clustering = DBSCAN(eps=1.2, min_samples=24)
+        self.clustering.fit(xyz, sample_weight=pesos)
+        unique_elements, counts_elements = np.unique(
+            self.clustering.labels_, return_counts=True
+        )
+        self.unique_elements = unique_elements[unique_elements > -1]
+        return self.clustering.labels_
+
+    def _radius(self, ra, dec, z):
+
+        galnum = len(ra)
+        dc = self.cosmo.comoving_distance(z)
+
+        c1 = SkyCoord(np.array(ra) * u.deg, np.array(dec) * u.deg)
+        c2 = SkyCoord(np.array(ra) * u.deg, np.array(dec) * u.deg)
+        sum_rij = 0
+        indi = np.arange(galnum)
+        for i in indi:
+            sep = c1[i].separation(c2[np.where(indi > i)])
+            rp_rad = sep.radian
+            rp_mpc = (
+                dc[i]
+                * rp_rad[
+                    :,
+                ]
+            )
+            rij = 1 / rp_mpc.value
+            sum_rij = sum_rij + np.sum(rij)
+
+        radius = (galnum * (galnum - 1) / (sum_rij)) * (np.pi / 2)
+        return radius
+
+    def _centers(self, xyz, z):
+        xcenter = np.mean(xyz[:, 0])
+        ycenter = np.mean(xyz[:, 1])
+        zcenter = np.mean(xyz[:, 2])
+        dc_center_i = np.sqrt(xcenter ** 2 + ycenter ** 2 + zcenter ** 2)
+        redshift_center = z_at_value(
+            self.cosmo.comoving_distance,
+            dc_center_i * u.Mpc,
+            zmin=z.min(),
+            zmax=z.max(),
+        )
+        return xcenter, ycenter, zcenter, dc_center_i, redshift_center
+
+    def _halomass(self, radius, z_center):
+        model = NFWProfile(self.cosmo, z_center, mdef=self.delta_c)
+        hmass = model.halo_radius_to_halo_mass(radius)
+        return hmass
 
     def halos(self):
         """Find massive dark matter halos.
@@ -70,59 +144,30 @@ class re_z_space(object):
 
         """
         # cartesian coordinates for galaxies
-        dc = self.cosmo.comoving_distance(self.z)
-        c = SkyCoord(
-            ra=np.array(self.ra) * u.degree,
-            dec=np.array(self.dec) * u.degree,
-            distance=np.array(dc) * u.mpc,
-        )
-        xyz = np.array([c.cartesian.x, c.cartesian.y, c.cartesian.z]).T
+        xyz = self._xyzcoordinates()
         # finding group of galaxies
-        pesos = 1 + np.arctan(self.z / 0.050)
-        self.clustering = DBSCAN(eps=5, min_samples=130)
-        self.clustering.fit(xyz, sample_weight=pesos)
-        unique_elements, counts_elements = np.unique(
-            self.clustering.labels_, return_counts=True
-        )
-        self.unique_elements = unique_elements[unique_elements > -1]
+        self._groups(xyz)
         # mass and center, for each group
-        self.xyzcentros = np.empty([len(unique_elements), 3])
-        self.dc_centro = np.empty([len(unique_elements)])
-        self.hmass = np.empty([len(unique_elements)])
-        for i in unique_elements:
-            v1 = xyz[self.clustering.labels_ == i]
-            # center
-            self.xyzcentros[i, 0] = np.mean(v1[:, 0])
-            self.xyzcentros[i, 1] = np.mean(v1[:, 1])
-            self.xyzcentros[i, 2] = np.mean(v1[:, 2])
-            # radio
-            xradio = np.std(xyz[:, 0])
-            yradio = np.std(xyz[:, 1])
-            zradio = np.std(xyz[:, 2])
-            radio = np.sqrt(xradio ** 2 + yradio ** 2 + zradio ** 2)
-            # redshift of center
-            self.dc_centro[i] = np.sqrt(
-                self.xyzcentros[i, 0] ** 2
-                + self.xyzcentros[i, 1] ** 2
-                + self.xyzcentros[i, 2] ** 2
+        self.xyzcenters = np.empty([len(self.unique_elements), 3])
+        self.dc_center = np.empty([len(self.unique_elements)])
+        self.hmass = np.empty([len(self.unique_elements)])
+        for i in self.unique_elements:
+            masksel = [self.clustering.labels_ == i]
+            # halo radius
+            radius = self._radius(
+                self.ra[masksel], self.dec[masksel], self.z[masksel]
             )
-            redshift = self.z[self.clustering.labels_ == i]
-            z_centro = z_at_value(
-                self.cosmo.comoving_distance,
-                self.dc_centro[i] * u.Mpc,
-                zmin=redshift.min(),
-                zmax=redshift.max(),
-            )
+            # halo center
+            x, y, z, dc, z_cen = self._centers(xyz[masksel], self.z[masksel])
+            self.xyzcenters[i, 0] = x
+            self.xyzcenters[i, 0] = y
+            self.xyzcenters[i, 0] = z
+            self.dc_center[i] = dc
             # halo mass with NFW
             # NFW takes: halo radius, halo concentration parameter,
             # halo redshift, quantity consider, cosmology
-            cparam = 4
-            nfw = NFW(
-                radio, 4, z_centro, size_type="radius", cosmology=self.cosmo
-            )
-            r200 = cparam * radio
-
-            self.hmass[i] = nfw.mass(r200).value
+            model = NFWProfile(self.cosmo, z_cen, mdef=dc)
+            self.hmass[i] = model.halo_radius_to_halo_mass(radius)
 
         self.labelshmassive = np.where(self.hmass > self.Mth)
         # self.hmass = np.where(self.hmass > self.Mth)
@@ -212,12 +257,13 @@ class re_z_space(object):
         v = np.fft.fft(self.cosmo.H0 * 1 * f * np.fft.fft(self.delta) / bhm)
 
         zcor = np.zeros((len(self.clustering.labels_)))
-        
+
         for i in self.unique_elements:
             masc = [self.clustering.labels_ == i]
-            zcor[masc] = ( self.z[masc] - v[i] / const.c.value ) / (
-                1 + v[i] / const.c.value)
-            
+            zcor[masc] = (self.z[masc] - v[i] / const.c.value) / (
+                1 + v[i] / const.c.value
+            )
+
     # Comoving distance
     # rcomovingk = calculo de distancia comoving a partir de zk
     # return rcomovingk
@@ -225,8 +271,8 @@ class re_z_space(object):
     #   reconstructed Kaiser space; based on correcting for FoG effect only
     def fogcorr(self, seedvalue=None):
         """Corrects the Finger of God effect only."""
-        dcFoGcorr = np.zeros(len(self.clustering.labels_))
-        zFoGcorr = np.zeros(len(self.clustering.labels_))
+        dc_fog_corr = np.zeros(len(self.clustering.labels_))
+        z_fog_corr = np.zeros(len(self.clustering.labels_))
         for i in self.labelshmassive[0]:
 
             numgal = np.sum(self.clustering.labels_ == i)
@@ -239,23 +285,20 @@ class re_z_space(object):
 
             bins = np.linspace(0, 5000, 200)
             r = (
-                (
-                    bins[
-                        1:,
-                    ]
-                    - bins[
-                        :-1,
-                    ]
-                )
-                / 2
-            ) + bins[:-1]
+                bins[
+                    1:,
+                ]
+                - bins[
+                    :-1,
+                ]
+            ) / 2 + bins[:-1]
             distr = n0 / ((r / rs) * (1 + r / rs) ** 2)
 
             distr = distr / np.sum(distr)
             ac = np.cumsum(distr)
 
-            np.random.RandomState(seed=seedvalue)
-            v3 = np.random.random(300000)
+            random = np.random.RandomState(seed=seedvalue)
+            v3 = random(300000)
             v4 = np.zeros(300000)
             for j in range(len(ac) - 1):
                 ind = np.where((v3 >= ac[j]) & (v3 < ac[j + 1]))
@@ -267,12 +310,12 @@ class re_z_space(object):
                 ) * np.random.random() + bins[int(v4[j])]
 
             self.dc = np.random.choice(v5, size=numgal)
-            dcFoGcorr[self.clustering.labels_ == i] = (
+            dc_fog_corr[self.clustering.labels_ == i] = (
                 self.dc_centro[i] + self.dc
             )
 
             v6 = np.zeros(numgal)
-            v7 = dcFoGcorr[self.clustering.labels_ == i]
+            v7 = dc_fog_corr[self.clustering.labels_ == i]
             redshift = self.z[self.clustering.labels_ == i]
             for j in range(numgal):
                 v6[j] = z_at_value(
@@ -281,13 +324,13 @@ class re_z_space(object):
                     zmin=redshift.min() - 1,
                     zmax=redshift.max() + 1,
                 )
-            zFoGcorr[self.clustering.labels_ == i] = v6
-        dcFoGcorr[dcFoGcorr == 0] = self.cosmo.comoving_distance(
-            self.z[dcFoGcorr == 0]
+            z_fog_corr[self.clustering.labels_ == i] = v6
+        dc_fog_corr[dc_fog_corr == 0] = self.cosmo.comoving_distance(
+            self.z[dc_fog_corr == 0]
         )
-        zFoGcorr[dcFoGcorr == 0] = self.z[dcFoGcorr == 0]
+        z_fog_corr[dc_fog_corr == 0] = self.z[dc_fog_corr == 0]
 
-        return dcFoGcorr, zFoGcorr
+        return dc_fog_corr, z_fog_corr
 
     #    Re-real space reconstructed real space; based on correcting redshift
     #    space distortions
