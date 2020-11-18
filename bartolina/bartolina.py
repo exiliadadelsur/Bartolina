@@ -1,6 +1,6 @@
 # This file is part of the
 #   Bartolina Project (https://github.com/exiliadadelsur/Bartolina).
-# Copyright (c) 2020 Noelia Rocío Perez, Claudio Antonio Lopez Cortez
+# Copyright (c) 2020 Noelia Rocío Perez and Claudio Antonio Lopez Cortez
 # License: MIT
 #   Full Text: https://github.com/exiliadadelsur/Bartolina/blob/master/LICENSE
 
@@ -169,24 +169,24 @@ class ReZSpace(object):
             model = NFWProfile(self.cosmo, z_cen, mdef=dc)
             self.hmass[i] = model.halo_radius_to_halo_mass(radius)
 
-        self.labelshmassive = np.where(self.hmass > self.Mth)
-        # self.hmass = np.where(self.hmass > self.Mth)
+        self.labelshmassive = np.where(self.mass > self.Mth)
+        self.mass = self.mass[self.labelshmassive]
 
     def kaisercorr(self):
         """Corrects the Kaiser effect."""
-        self.xyzcentros = self.xyzcentros[self.labelshmassive]
+        self.xyzcenters = self.xyzcenters[self.labelshmassive]
         inf = np.array(
             [
-                self.xyzcentros[:, 0].min(),
-                self.xyzcentros[:, 1].min(),
-                self.xyzcentros[:, 2].min(),
+                self.xyzcenters[:, 0].min(),
+                self.xyzcenters[:, 1].min(),
+                self.xyzcenters[:, 2].min(),
             ]
         )
         sup = np.array(
             [
-                self.xyzcentros[:, 0].max(),
-                self.xyzcentros[:, 1].max(),
-                self.xyzcentros[:, 2].max(),
+                self.xyzcenters[:, 0].max(),
+                self.xyzcenters[:, 1].max(),
+                self.xyzcenters[:, 2].max(),
             ]
         )
         rangeaxis = sup - inf
@@ -209,9 +209,9 @@ class ReZSpace(object):
         binesy = np.linspace(liminf[1], limsup[1], 1025)
         binesz = np.linspace(liminf[2], limsup[2], 1025)
         binnum = np.arange(0, 1024)
-        xdist = pd.cut(self.xyzcentros[:, 0], bins=binesx, labels=binnum)
-        ydist = pd.cut(self.xyzcentros[:, 1], bins=binesy, labels=binnum)
-        zdist = pd.cut(self.xyzcentros[:, 2], bins=binesz, labels=binnum)
+        xdist = pd.cut(self.xyzcenters[:, 0], bins=binesx, labels=binnum)
+        ydist = pd.cut(self.xyzcenters[:, 1], bins=binesy, labels=binnum)
+        zdist = pd.cut(self.xyzcenters[:, 2], bins=binesz, labels=binnum)
         self.valingrid = np.array(
             [
                 np.array([xdist]),
@@ -245,9 +245,9 @@ class ReZSpace(object):
             idcellsempty = np.where(
                 (var[:, 0] == 0) & (var[:, 1] == 0) & (var[:, 2] == 0)
             )
-            indexcube[idcellsempty] = self.hmass[i]
+            indexcube[idcellsempty] = self.mass[i]
 
-        self.rho_h = np.sum(self.hmass) / (1024 ** 3)
+        self.rho_h = np.sum(self.mass) / (1024 ** 3)
         self.delta = np.where(indexcube == 0, self.rho_h, indexcube)
 
         f = self.cosmo.Om0 ** 0.6 + 1 / 70 * self.cosmo.Ode0 * (
@@ -256,23 +256,23 @@ class ReZSpace(object):
 
         v = np.fft.fft(self.cosmo.H0 * 1 * f * np.fft.fft(self.delta) / bhm)
 
-        zcor = np.zeros((len(self.clustering.labels_)))
+        zkaisercorr = np.zeros((len(self.clustering.labels_)))
 
         for i in self.unique_elements:
             masc = [self.clustering.labels_ == i]
-            zcor[masc] = (self.z[masc] - v[i] / const.c.value) / (
+            zkaisercorr[masc] = (self.z[masc] - v[i] / const.c.value) / (
                 1 + v[i] / const.c.value
             )
 
-    # Comoving distance
-    # rcomovingk = calculo de distancia comoving a partir de zk
-    # return rcomovingk
+        dckaisercorr = self.cosmo.comoving_distance(zkaisercorr)
+
+        return dckaisercorr, zkaisercorr
 
     #   reconstructed Kaiser space; based on correcting for FoG effect only
     def fogcorr(self, seedvalue=None):
         """Corrects the Finger of God effect only."""
-        dc_fog_corr = np.zeros(len(self.clustering.labels_))
-        z_fog_corr = np.zeros(len(self.clustering.labels_))
+        dcfogcorr = np.zeros(len(self.clustering.labels_))
+        zfogcorr = np.zeros(len(self.clustering.labels_))
         for i in self.labelshmassive[0]:
 
             numgal = np.sum(self.clustering.labels_ == i)
@@ -310,12 +310,13 @@ class ReZSpace(object):
                 ) * np.random.random() + bins[int(v4[j])]
 
             self.dc = np.random.choice(v5, size=numgal)
-            dc_fog_corr[self.clustering.labels_ == i] = (
-                self.dc_centro[i] + self.dc
+
+            dcfogcorr[self.clustering.labels_ == i] = (
+                self.dc_center[i] + self.dc
             )
 
             v6 = np.zeros(numgal)
-            v7 = dc_fog_corr[self.clustering.labels_ == i]
+            v7 = dcfogcorr[self.clustering.labels_ == i]
             redshift = self.z[self.clustering.labels_ == i]
             for j in range(numgal):
                 v6[j] = z_at_value(
@@ -324,13 +325,14 @@ class ReZSpace(object):
                     zmin=redshift.min() - 1,
                     zmax=redshift.max() + 1,
                 )
-            z_fog_corr[self.clustering.labels_ == i] = v6
-        dc_fog_corr[dc_fog_corr == 0] = self.cosmo.comoving_distance(
-            self.z[dc_fog_corr == 0]
-        )
-        z_fog_corr[dc_fog_corr == 0] = self.z[dc_fog_corr == 0]
+            zfogcorr[self.clustering.labels_ == i] = v6
 
-        return dc_fog_corr, z_fog_corr
+        dcfogcorr[dcfogcorr == 0] = self.cosmo.comoving_distance(
+            self.z[dcfogcorr == 0]
+        )
+        zfogcorr[dcfogcorr == 0] = self.z[dcfogcorr == 0]
+
+        return dcfogcorr, zfogcorr
 
     #    Re-real space reconstructed real space; based on correcting redshift
     #    space distortions
