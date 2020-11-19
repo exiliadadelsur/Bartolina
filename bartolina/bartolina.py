@@ -27,6 +27,10 @@ import pandas as pd
 from sklearn.cluster import DBSCAN
 
 
+# ============================================================================
+# MAIN CLASS
+# ============================================================================
+
 @attr.s
 class ReZSpace(object):
     """Real space reconstruction algorithm.
@@ -41,21 +45,25 @@ class ReZSpace(object):
           Declination astronomy coordinate in decimal degrees.
     z : array_like
         Observational redshift.
-    cosmo : astropy class
-            Astropy class that describe the cosmology to use.
+    cosmo : object
+            Instance of an astropy cosmology. Default cosmology is 
+            LambdaCDM with H0=100, Om0=0.27, Ode0=0.73.
     Mth : float
           The threshold mass that determines massive halos in solar mass.
+          Default is 10 ** 12.5.
+    delta_c : string
+              Overdensity constant. Default is "200m".
 
     Methods
     -------
-    Halos()
+    halos()
         Find massive dark matter halos and cartesian coordinates of his
         centers. Necesary for all the other methods.
-    Kaisercorr()
+    kaisercorr()
         Corrects the Kaiser effect only.
-    FoGcorr()
+    fogcorr()
         Corrects the Finger of God effect only.
-    RealSpace()
+    realspace()
         Corrects both effects (Kaiser and FoG).
 
     """
