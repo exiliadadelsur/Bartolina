@@ -2,12 +2,7 @@ language: python
 sudo: true
 
 before_install:
-  - sudo wget ftp.wayne.edu/gnu/gsl/gsl-2.6.tar.gz
-  - tar -xzvf gsl-2.6.tar.gz
-  - cd gsl-2.6
-  - ./configure
-  - make
-  - make install
+    - sudo apt-get install libgsl-dev
 
 install:
     - pip install tox
@@ -18,7 +13,7 @@ script:
 matrix:
     include:
         - python: 3.8
-          env: TOXENV=testenv
+          env: TOXENV=py38
           dist: xenial
 
         - python: 3.8
