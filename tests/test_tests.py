@@ -4,20 +4,44 @@
 # License: MIT
 #   Full Text: https://github.com/exiliadadelsur/Bartolina/blob/master/LICENSE
 
+import os
+import pathlib
+
 from astropy.table import Table
 
 import bartolina
 
 import numpy as np
+from numpy.testing import assert_almost_equal
 
 import pytest
 
 
+# ==============================================================================
+# CONSTANTS
+# ==============================================================================
+
+
+PATH = os.path.abspath(os.path.dirname(__file__))
+
+RESOURCES_PATH = pathlib.Path(PATH).parents[0] / "resources"
+
+
+# ==============================================================================
+# FIXTURES
+# ==============================================================================
+
+
 @pytest.fixture(scope="session")
 def bt():
-    gal = Table.read("../resources/SDSS.fits")
+    gal = Table.read(RESOURCES_PATH / "SDSS.fits")
     rzs = bartolina.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
     return rzs
+
+
+# ==============================================================================
+# TESTS
+# ==============================================================================
 
 
 def test_radius(bt):
@@ -89,10 +113,13 @@ def test_hmass(bt):
     assert hmass < 10 ** 16
 
 
-# def test_bias(bt):
+def test_bias(bt):
 
-#    bias = bt._bias(100, 10 ** 12.5, 0.27)
-#    assert bias == np.array([1.00714324])
+    bias = bt._bias(100, 10 ** 12.5, 0.27)
+    expected_bias = np.array([1.00714324])  # 8 decimals
+
+    assert_almost_equal(bias, expected_bias, 8)  # equal within 8 decimals
+
 
 # def test_grid3d(bt):
 
