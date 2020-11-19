@@ -62,6 +62,24 @@ class ReZSpace(object):
     cosmo = attr.ib(default=LambdaCDM(H0=100, Om0=0.27, Ode0=0.73))
     Mth = attr.ib(default=(10 ** 12.5))
 
+    def _bias(self, H0, Mth, omega_m):
+
+        pars = camb.CAMBparams()
+        pars.set_cosmology(H0, ombh2=0.022, omch2=0.122)
+        pars.set_dark_energy(w=-1.0)
+        pars.InitPower.set_params(ns=0.965)
+        pars.set_matter_power(redshifts=[0.0, 0.8], kmax=2.0)
+
+        pars.NonLinear = model.NonLinear_none
+        results = camb.get_results(pars)
+        kh, z, pk = results.get_matter_power_spectrum(
+            minkh=1e-4, maxkh=1, npoints=1000
+        )
+
+        bhm = bias.bias_at_M(Mth, kh, pk, omega_m)
+
+        return bhm
+
     def halos(self):
         """Find massive dark matter halos.
 
@@ -175,21 +193,7 @@ class ReZSpace(object):
             ]
         ).T
 
-        # Halo bias
-        # calcular k y P_linear con CAMB
-        # cosmología
-        pars = camb.CAMBparams()
-        pars.set_cosmology(self.H0, ombh2=0.022, omch2=0.122)
-        pars.set_dark_energy(w=-1.0)
-        pars.InitPower.set_params(ns=0.965)
-        pars.set_matter_power(redshifts=[0.0, 0.8], kmax=2.0)
-        # calcula plineal
-        pars.NonLinear = model.NonLinear_none
-        results = camb.get_results(pars)
-        kh, z, pk = results.get_matter_power_spectrum(
-            minkh=1e-4, maxkh=1, npoints=1000
-        )
-        bhm = bias.bias_at_M(self.Mth, kh, pk, self.omega_m)
+        bhm = self._bias(self.cosmo.H0, self.Mth, self.cosmo.Om0)
 
         x = np.arange(0, 1024)
         cube = np.array(np.meshgrid(x, x, x)).T.reshape(-1, 3)
