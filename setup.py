@@ -20,11 +20,12 @@
 # IMPORTS
 # =============================================================================
 
-# import os
-# import pathlib
+import os
+import pathlib
 
-# from ez_setup import use_setuptools
-# use_setuptools()
+from ez_setup import use_setuptools
+
+use_setuptools()
 
 from setuptools import setup
 
@@ -32,6 +33,12 @@ from setuptools import setup
 # =============================================================================
 # CONSTANTS
 # =============================================================================
+
+# Short for cluster_toolkit
+CLTK = {
+    "name": "cluster_toolkit",
+    "url": "https://github.com/tmcclintock/cluster_toolkit/",
+}
 
 REQUIREMENTS = [
     "numpy",
@@ -41,18 +48,19 @@ REQUIREMENTS = [
     "sklearn",
     "halotools",
     "pandas",
+    f"{CLTK['name']} @ git+{CLTK['url']}@master#egg={CLTK['name']}",
 ]
 
-# PATH = pathlib.Path(os.path.abspath(os.path.dirname(__file__)))
+PATH = pathlib.Path(os.path.abspath(os.path.dirname(__file__)))
 
-# with open(PATH / "README.md") as fp:
-#     LONG_DESCRIPTION = fp.read()
+with open(PATH / "README.md") as fp:
+    LONG_DESCRIPTION = fp.read()
 
-# with open(PATH / "grispy" / "__init__.py") as fp:
-#     for line in fp.readlines():
-#         if line.startswith("__version__ = "):
-#             VERSION = line.split("=", 1)[-1].replace('"', '').strip()
-#             break
+with open(PATH / "bartolina" / "__init__.py") as fp:
+    for line in fp.readlines():
+        if line.startswith("__version__ = "):
+            VERSION = line.split("=", 1)[-1].replace('"', "").strip()
+            break
 
 # =============================================================================
 # FUNCTIONS
@@ -62,16 +70,15 @@ REQUIREMENTS = [
 def do_setup():
     setup(
         name="bartolina",
-        version="0.0.1",
+        version=VERSION,
         description="Corrections for the redshift distortion",
         author=["Noelia Rocío Perez", "Claudio Antonio Lopez Cortez"],
         url="https://github.com/exiliadadelsur/Bartolina",
         license="MIT",
         keywords=["space redshift", "kaiser", "finger of god", "fog"],
+        packages=["bartolina"],
+        py_modules=["ez_setup"],
         install_requires=REQUIREMENTS,
-        dependency_links=[
-            "https://github.com/tmcclintock/cluster_toolkit.git"
-        ],
     )
 
 
