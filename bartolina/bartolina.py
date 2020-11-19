@@ -31,6 +31,7 @@ from sklearn.cluster import DBSCAN
 # MAIN CLASS
 # ============================================================================
 
+
 @attr.s
 class ReZSpace(object):
     """Real space reconstruction algorithm.
@@ -46,7 +47,7 @@ class ReZSpace(object):
     z : array_like
         Observational redshift.
     cosmo : object
-            Instance of an astropy cosmology. Default cosmology is 
+            Instance of an astropy cosmology. Default cosmology is
             LambdaCDM with H0=100, Om0=0.27, Ode0=0.73.
     Mth : float
           The threshold mass that determines massive halos in solar mass.
@@ -144,9 +145,9 @@ class ReZSpace(object):
         hmass = model.halo_radius_to_halo_mass(radius)
         return hmass
 
-    def _bias(self, H0, Mth, omega_m):
+    def _bias(self, h0, mth, omega_m):
         pars = camb.CAMBparams()
-        pars.set_cosmology(H0, ombh2=0.022, omch2=0.122)
+        pars.set_cosmology(h0, ombh2=0.022, omch2=0.122)
         pars.set_dark_energy(w=-1.0)
         pars.InitPower.set_params(ns=0.965)
         pars.set_matter_power(redshifts=[0.0, 0.8], kmax=2.0)
@@ -156,7 +157,7 @@ class ReZSpace(object):
         kh, z, pk = results.get_matter_power_spectrum(
             minkh=1e-4, maxkh=1, npoints=1000
         )
-        bhm = bias.bias_at_M(Mth, kh, pk, omega_m)
+        bhm = bias.bias_at_M(mth, kh, pk, omega_m)
         return bhm
 
     def halos(self):
