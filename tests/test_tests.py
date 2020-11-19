@@ -88,6 +88,10 @@ def test_hmass(bt):
 
     assert hmass < 10 ** 16
 
+#def test_bias(bt):
+
+#    bias = bt._bias(100, 10 ** 12.5, 0.27)
+#    assert bias == np.array([1.00714324])
 
 # def test_grid3d(bt):
 
@@ -104,3 +108,6 @@ def test_hmass(bt):
 #    bt.halos()
 #    dcCorr, zCorr = bt.fogcorr(seedvalue=1234)
 #    assert dcCorr.max() < 1120
+
+
+
