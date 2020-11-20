@@ -1,10 +1,14 @@
 language: python
 sudo: true
 
-before_install:
-    - sudo apt-get install libgsl-dev
-
 install:
+    # CAMB requires gfortran
+    - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
+    - sudo apt-get -q update
+    - sudo apt-get -y install gfortran
+    # Cluster_toolkit requires GSL
+    - sudo apt-get -y install libgsl-dev
+    # Tox
     - pip install tox
 
 script:
