@@ -9,86 +9,96 @@ from astropy.table import Table
 import bartolina
 
 import numpy as np
+import numpy.testing as npt
 
 import pytest
 
 
 @pytest.fixture(scope="session")
-def bt():
+def table():
     gal = Table.read("../resources/SDSS.fits")
-    rzs = bartolina.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["z"])
-    return rzs
+    return gal
+
+@pytest.fixture(scope="session")
+def bt(table):
+    r = bartolina.ReZSpace(table["RAJ2000"], table["DEJ2000"], table["zobs"])
+    return r
+
+#@pytest.fixture(scope="session")
+#def bt():
+#    gal = Table.read("../resources/SDSS.fits")
+#    rzs = bartolina.ReZSpace(gal["RAJ2000"], gal["DEJ2000"], gal["zobs"])
+#    mags = gal['ABSR']
+#    return rzs, mags
 
 
-def test_radius(bt):
+def test_radius_40(bt):
     xyz = bt._xyzcoordinates()
-    groups = bt._groups(xyz)
-    # identify id cluster with 40 members
-    idcl, numcl = np.unique(groups, return_counts=True)
-    idcl = idcl[numcl <= 40]
-    numcl = numcl[numcl <= 40]
-    idcl[np.argsort(numcl)[::-1][0]]
-    idclmax = idcl[np.argsort(numcl)[::-1][0]]
-    # radius calculation
+    groups, id_groups = bt._groups(xyz)
     radius = bt._radius(
-        bt.ra[groups == idclmax],
-        bt.dec[groups == idclmax],
-        bt.z[groups == idclmax],
+        bt.ra[groups == 2903],
+        bt.dec[groups == 2903],
+        bt.z[groups == 2903],
     )
     # halo with 40 members must have a virial radius less than 3 Mpc
-    assert radius < 3
+    assert radius == 0
+#    assert radius > 0
 
 
-def test_zcenter(bt):
+def test_hmass_40(bt):   
     xyz = bt._xyzcoordinates()
-    groups = bt._groups(xyz)
-    # identify id cluster with 40 members
-    idcl, numcl = np.unique(groups, return_counts=True)
-    idcl = idcl[numcl <= 40]
-    numcl = numcl[numcl <= 40]
-    idcl[np.argsort(numcl)[::-1][0]]
-    idclmax = idcl[np.argsort(numcl)[::-1][0]]
-    # find centers and their redshifts
-    xyz = xyz[groups == idclmax]
-    z = bt.z[groups == idclmax]
-    xcen, ycen, zcen, dc_center_i, redshift_center = bt._centers(xyz, z)
-    # center must have redshift between halo's redshifts limits
-    assert redshift_center < z.max()
-
-
-def test_numhalo(bt):
-    xyz = bt._xyzcoordinates()
-    groups = bt._groups(xyz)
-    unique_elements, counts_elements = np.unique(groups, return_counts=True)
-    numhalo = np.sum([counts_elements > 150])
-    assert numhalo == 14
-
-
-def test_hmass(bt):
-    xyz = bt._xyzcoordinates()
-    groups = bt._groups(xyz)
-    # identify id cluster with 40 members
-    idcl, numcl = np.unique(groups, return_counts=True)
-    idcl = idcl[numcl <= 40]
-    numcl = numcl[numcl <= 40]
-    idcl[np.argsort(numcl)[::-1][0]]
-    idclmax = idcl[np.argsort(numcl)[::-1][0]]
-
+    groups, id_groups = bt._groups(xyz)
     radius = bt._radius(
-        bt.ra[groups == idclmax],
-        bt.dec[groups == idclmax],
-        bt.z[groups == idclmax],
+        bt.ra[groups == 2903],
+        bt.dec[groups == 2903],
+        bt.z[groups == 2903],
     )
 
-    xyz = xyz[groups == idclmax]
-    z = bt.z[groups == idclmax]
+    xyz = xyz[groups == 2903]
+    z = bt.z[groups == 2903]
     xcen, ycen, zcen, dc_center_i, redshift_center = bt._centers(xyz, z)
 
     hmass = bt._halomass(radius, redshift_center)
 
-    assert hmass < 10 ** 16
+    #assert hmass < 0
+    npt.assert_approx_equal(hmass/10 ** 14, 1, significant= 0.1)
 
 
+def test_zcenter(bt):   
+    xyz = bt._xyzcoordinates()
+    groups, id_groups = bt._groups(xyz)
+    xyz = xyz[groups == 2903]
+    z = bt.z[groups == 2903]
+    xcen, ycen, zcen, dc_center_i, redshift_center = bt._centers(xyz, z)
+    # center must have redshift between halo's redshifts limits
+    assert redshift_center < z.max()
+    assert redshift_center > z.min()
+
+
+def test_numhalo(bt):   
+    xyz = bt._xyzcoordinates()
+    groups, id_groups = bt._groups(xyz)
+    unique_elements, counts_elements = np.unique(groups, return_counts=True)
+    numhalo = np.sum([counts_elements > 150])
+    assert numhalo == 13
+ 
+    
+def test_halo_properties_rad(bt):   
+    xyz = bt._xyzcoordinates()
+    # finding group of galaxies
+    groups, id_groups = bt._groups(xyz)
+    # mass and center, for each group
+    xyz_c, dc_c, z_c, rad, mass = bt._group_prop(id_groups, groups, xyz)    
+    assert np.sum(rad < 0) == 0
+
+def test_halo_properties_mass(bt):   
+    xyz = bt._xyzcoordinates()
+    # finding group of galaxies
+    groups, id_groups = bt._groups(xyz)
+    # mass and center, for each group
+    xyz_c, dc_c, z_c, rad, mass = bt._group_prop(id_groups, groups, xyz)    
+    assert np.sum(mass < 0) == 0
+    
 # def test_bias(bt):
 
 #    bias = bt._bias(100, 10 ** 12.5, 0.27)
@@ -103,9 +113,28 @@ def test_hmass(bt):
 #    )
 #    assert len(unique_elements) == len(counts_elements)
 
+def test_dc_fog_corr(table, bt):
+    dcfogcorr, dc_centers, radius, groups = bt._dc_fog_corr(table['ABSR'])    
+    delta = np.abs(dc_centers[2903] - radius[2903])
+    mask = (groups == 2903)
+    galradius = np.abs(dc_centers[2903] - dcfogcorr[mask])
+    assert galradius.max() <= delta 
+    assert len(dcfogcorr) == len(bt.z)
 
-# def test_FoGcorr(bt):
 
-#    bt.halos()
-#    dcCorr, zCorr = bt.fogcorr(seedvalue=1234)
-#    assert dcCorr.max() < 1120
+#def test_z_fog_corr(table, bt):
+#    dcfogcorr, dc_centers, radius, groups = bt._dc_fog_corr(table['ABSR'])
+#    zfogcorr = bt._z_fog_corr(dcfogcorr, table['ABSR'])    
+#    assert len(zfogcorr) == len(bt.z)
+
+
+#def test_fogcorr(table, bt):
+#    dcfogcorr, zfogcorr = bt.fogcorr(table['ABSR'])
+#    assert zfogcorr.min() > 0
+#    assert zfogcorr.max() < bt.z.max()
+
+
+
+
+
+
