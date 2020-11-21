@@ -115,12 +115,7 @@ class ReZSpace(object):
         for i in indi:
             sep = c1[i].separation(c2[np.where(indi > i)])
             rp_rad = sep.radian
-            rp_mpc = (
-                dc[i]
-                * rp_rad[
-                    :,
-                ]
-            )
+            rp_mpc = dc[i] * rp_rad
             rij = 1 / rp_mpc.value
             sum_rij = sum_rij + np.sum(rij)
 
@@ -294,14 +289,7 @@ class ReZSpace(object):
             )
 
             bins = np.linspace(0, 5000, 200)
-            r = (
-                bins[
-                    1:,
-                ]
-                - bins[
-                    :-1,
-                ]
-            ) / 2 + bins[:-1]
+            r = (bins[1:] - bins[:-1]) / 2 + bins[:-1]
             distr = n0 / ((r / rs) * (1 + r / rs) ** 2)
 
             distr = distr / np.sum(distr)

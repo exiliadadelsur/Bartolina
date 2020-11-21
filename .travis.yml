@@ -1,15 +1,14 @@
 language: python
 sudo: true
 
-before_install:
-  - sudo wget ftp.wayne.edu/gnu/gsl/gsl-2.6.tar.gz
-  - tar -xzvf gsl-2.6.tar.gz
-  - cd gsl-2.6
-  - ./configure
-  - make
-  - make install
-
 install:
+    # CAMB requires gfortran
+    - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
+    - sudo apt-get -q update
+    - sudo apt-get -y install gfortran
+    # Cluster_toolkit requires GSL
+    - sudo apt-get -y install libgsl-dev
+    # Tox
     - pip install tox
 
 script:
@@ -18,21 +17,21 @@ script:
 matrix:
     include:
         - python: 3.8
-          env: TOXENV=testenv
-          dist: xenial
+          env: TOXENV=py38
+          dist: focal
 
         - python: 3.8
           env: TOXENV=style
-          dist: xenial
+          dist: focal
 
         - python: 3.8
           env: TOXENV=coverage
-          dist: xenial
+          dist: focal
 
         - python: 3.8
           env: TOXENV=docstyle
-          dist: xenial
+          dist: focal
 
         - python: 3.8
           env: TOXENV=docs
-          dist: xenial
+          dist: focal

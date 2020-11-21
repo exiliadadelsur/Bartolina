@@ -4,5 +4,8 @@
 # License: MIT
 #   Full Text: https://github.com/exiliadadelsur/Bartolina/blob/master/LICENSE
 
+__version__ = "0.0.1"
+
 __all__ = ["ReZSpace"]
+
 from .bartolina import ReZSpace
