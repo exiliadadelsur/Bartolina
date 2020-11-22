@@ -28,22 +28,22 @@ from sklearn.cluster import DBSCAN
 
 
 @attr.s(frozen=True)
-class Halo:
+class Halo(object):
     """Properties of dark matter halos"""
-    
+
     xyzcenters = attr.ib()
     dc_centers = attr.ib()
     z_centers = attr.ib()
     radius = attr.ib()
-    mass = attr.ib()    
+    mass = attr.ib()
     labels_h_massive = attr.ib()
 
 
 @attr.s(frozen=True)
-class GalInGroups:
+class GalInGroups(object):
     """Clustering results"""
-    
-    groups  = attr.ib()
+
+    groups = attr.ib()
     id_groups = attr.ib()
 
 
@@ -106,12 +106,12 @@ class ReZSpace(object):
         # finding group of galaxies
         groups, id_groups = self._groups(xyz)
         # mass and center, for each group
-        xyz_c, dc_c, z_c, rad, mass = self._group_prop(id_groups, groups, xyz)        
+        xyz_c, dc_c, z_c, rad, mass = self._group_prop(id_groups, groups, xyz)
         # selec massive halos
         labels_h_massive = np.where(mass > self.Mth)
         GalInGroups(groups, id_groups)
         Halo(xyz_c, dc_c, z_c, rad, mass, labels_h_massive)
-        
+
     # ========================================================================
     # Internal methods
     # ========================================================================
@@ -150,12 +150,7 @@ class ReZSpace(object):
         for i in indi:
             sep = c1[i].separation(c2[np.where(indi > i)])
             rp_rad = sep.radian
-            rp_mpc = (
-                dc[i]
-                * rp_rad[
-                    :,
-                ]
-            )
+            rp_mpc = dc[i] * rp_rad
             rij = 1 / rp_mpc.value
             sum_rij = sum_rij + np.sum(rij)
 
@@ -217,45 +212,44 @@ class ReZSpace(object):
         return bhm
 
     def _dc_fog_corr(self, abs_mag, mag_threshold=-20.5, seedvalue=None):
-        a = Halo.z_centers
         dcfogcorr = np.zeros(len(self.z))
         for i in Halo.labels_h_massive:
-            sat_gal_mask = ((GalInGroups.groups == i) 
-                            * (abs_mag > mag_threshold))
+            sat_gal_mask = (GalInGroups.groups == i) * (
+                abs_mag > mag_threshold
+            )
             numgal = np.sum(sat_gal_mask)
-            nfw = NFWProfile(self.cosmo, Halo.z_centers[i], 
-                               mdef=self.delta_c)
+            nfw = NFWProfile(self.cosmo, Halo.z_centers[i], mdef=self.delta_c)
             radial_positions_pos = nfw.mc_generate_nfw_radial_positions(
-                                    num_pts=300000, 
-                                    halo_radius=Halo.radius[i],
-                                    seed=seedvalue)
+                num_pts=300000, halo_radius=Halo.radius[i], seed=seedvalue
+            )
             radial_positions_neg = nfw.mc_generate_nfw_radial_positions(
-                                    num_pts=300000, 
-                                    halo_radius=Halo.radius[i],
-                                    seed=seedvalue)
+                num_pts=300000, halo_radius=Halo.radius[i], seed=seedvalue
+            )
             radial_positions_neg = -1 * radial_positions_neg
-            radial_positions = np.r_[radial_positions_pos,
-                                     radial_positions_neg]
+            radial_positions = np.r_[
+                radial_positions_pos, radial_positions_neg
+            ]
             dc = np.random.choice(radial_positions, size=numgal)
-            dcfogcorr[sat_gal_mask] = Halo.dc_centers[i] + dc            
+            dcfogcorr[sat_gal_mask] = Halo.dc_centers[i] + dc
         return dcfogcorr, Halo.dc_centers, Halo.radius, GalInGroups.groups
 
     def _z_fog_corr(self, dcfogcorr, abs_mag, mag_threshold=-20.5):
         zfogcorr = np.zeros(len(self.z))
         for i in Halo.labels_h_massive:
-            sat_gal_mask = ((GalInGroups.groups == i) 
-                            * (abs_mag > mag_threshold))
+            sat_gal_mask = (GalInGroups.groups == i) * (
+                abs_mag > mag_threshold
+            )
             numgal = np.sum(sat_gal_mask)
             z_galaxies = np.zeros(numgal)
             dc_galaxies = dcfogcorr[sat_gal_mask]
             redshift = self.z[sat_gal_mask]
             for j in range(numgal):
                 z_galaxies[j] = z_at_value(
-                        self.cosmo.comoving_distance,
-                        dc_galaxies[j] * u.Mpc,
-                        zmin=redshift.min() - 0.01,
-                        zmax=redshift.max() + 0.01,
-                        )
+                    self.cosmo.comoving_distance,
+                    dc_galaxies[j] * u.Mpc,
+                    zmin=redshift.min() - 0.01,
+                    zmax=redshift.max() + 0.01,
+                )
             zfogcorr[sat_gal_mask] = z_galaxies
         return zfogcorr
 
@@ -371,8 +365,11 @@ class ReZSpace(object):
             Redshift of galaxies after apply corrections for FoG
             effect. Array has the same lengh that the input array z.
 
+
         """
-        dcfogcorr, dc_centers, radius, groups = self._dc_fog_corr(abs_mag, mag_threshold, seedvalue)
+        dcfogcorr, dc_centers, radius, groups = self._dc_fog_corr(
+            abs_mag, mag_threshold, seedvalue
+        )
         zfogcorr = self._z_fog_corr(dcfogcorr, abs_mag, mag_threshold)
         dcfogcorr[dcfogcorr == 0] = self.cosmo.comoving_distance(
             self.z[dcfogcorr == 0]
