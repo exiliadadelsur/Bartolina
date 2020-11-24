@@ -29,7 +29,7 @@ from sklearn.cluster import DBSCAN
 
 @attr.s(frozen=True)
 class Halo(object):
-    """Properties of dark matter halos"""
+    """Store properties of dark matter halos."""
 
     xyzcenters = attr.ib()
     dc_centers = attr.ib()
@@ -40,8 +40,8 @@ class Halo(object):
 
 
 @attr.s(frozen=True)
-class GalInGroups(object):
-    """Clustering results"""
+class GalInGroup(object):
+    """Store clustering results."""
 
     groups = attr.ib()
     id_groups = attr.ib()
@@ -56,9 +56,10 @@ class GalInGroups(object):
 class ReZSpace(object):
     """Real space reconstruction algorithm.
 
-    ...
+    This class have methods for corrects galaxy positions affected by Kaiser
+    and Finger of God (FoG) effects.
 
-    Attributes
+    Parameters
     ----------
     ra : array_like
          Right ascension astronomy coordinate in decimal degrees.
@@ -77,12 +78,32 @@ class ReZSpace(object):
 
     Methods
     -------
-    kaisercorr()
+    kaisercorr
         Corrects the Kaiser effect only.
-    fogcorr()
+    fogcorr
         Corrects the Finger of God effect only.
-    realspace()
+    realspace
         Corrects both effects (Kaiser and FoG).
+
+    Notes:
+    ------
+    For the corrections is needed to determine the center, radius and mass of
+    each dark matter halo. For this, we consider the geometric center, and the
+    mass is calculated following a NFW profile (Navarro et al. 1997 [1]).
+    The radius is estimated as in Merchán & Zandivarez (2005) [2].
+    The threshold mass is used to determine which of the halos are massive.
+    This is, massive halos are those whose mass are higher than the threshold
+    mass.
+    For the identification of halos we use the DBSCAN method of scikit-learn
+    package, selecting the eps and min_samples parameters to obtanied the same
+    galaxy groups of Zapata et al. (2009) [3] that have more of 150 members.
+
+    References:
+    -----------
+    [1] Navarro J. F., Frenk C. S., White S. D., 1997, Apj, 490, 493
+    [2] Merchán M., Zandivarez A., 2005, Apj, 630, 759
+    [3] Zapata T., Pérez J., Padilla N., & Tissera P., 2009, MNRAS, 394, 2229
+
 
     """
 
@@ -94,44 +115,56 @@ class ReZSpace(object):
     Mth = attr.ib(default=(10 ** 12.5))
     delta_c = attr.ib(default="200m")
 
-    def __attrs_post_init__(self):
+    # ========================================================================
+    # Internal methods
+    # ========================================================================
+
+    def _dark_matter_halos(self):
         """Find properties of massive dark matter halos.
 
         Find massive dark matter halos and cartesian coordinates of his
         centers. Necesary for all the other methods.
+        Properties of halos: geometric center, comoving distance to center,
+        redshift to center, radius of halo and mass of halo.
 
         """
         # cartesian coordinates for galaxies
         xyz = self._xyzcoordinates()
         # finding group of galaxies
         groups, id_groups = self._groups(xyz)
-        # mass and center, for each group
+        # distance and redshifts to halo center
+        # radius and mass of halo
         xyz_c, dc_c, z_c, rad, mass = self._group_prop(id_groups, groups, xyz)
         # selec massive halos
         labels_h_massive = np.where(mass > self.Mth)
-        GalInGroups(groups, id_groups)
-        Halo(xyz_c, dc_c, z_c, rad, mass, labels_h_massive)
-
-    # ========================================================================
-    # Internal methods
-    # ========================================================================
+        # store results of clustering
+        galingroups = GalInGroup(groups, id_groups)
+        # store properties of halos
+        halos = Halo(xyz_c, dc_c, z_c, rad, mass, labels_h_massive)
+        return halos, galingroups
 
     def _xyzcoordinates(self):
-
+        """x, y, z cartesian coordinates to galaxies."""
+        # comoving distance to galaxies
         dc = self.cosmo.comoving_distance(self.z)
+        # set Ra and Dec in degrees. Comoving distance in Mpc
         c = SkyCoord(
             ra=np.array(self.ra) * u.degree,
             dec=np.array(self.dec) * u.degree,
             distance=np.array(dc) * u.mpc,
         )
+        # creat an array with the results
         xyz = np.array([c.cartesian.x, c.cartesian.y, c.cartesian.z]).T
         return xyz
 
     def _groups(self, xyz):
-
+        """Clustering of galaxies."""
+        # set weights for clustering
         pesos = self.z * 100
+        # clustering of galaxies
         clustering = DBSCAN(eps=1.2, min_samples=24)
         clustering.fit(xyz, sample_weight=pesos)
+        # select only galaxies in groups
         unique_elements, counts_elements = np.unique(
             clustering.labels_, return_counts=True
         )
@@ -139,12 +172,15 @@ class ReZSpace(object):
         return clustering.labels_, unique_elements
 
     def _radius(self, ra, dec, z):
-
+        """Radius of dark matter halos."""
+        # number of galaxies
         galnum = len(ra)
+        # comoving distance to galaxies
         dc = self.cosmo.comoving_distance(z)
-
+        # prepare the coordinates for distance calculation
         c1 = SkyCoord(np.array(ra) * u.deg, np.array(dec) * u.deg)
         c2 = SkyCoord(np.array(ra) * u.deg, np.array(dec) * u.deg)
+        # equation 6 of Merchán & Zandivarez (2005) [1]
         sum_rij = 0
         indi = np.arange(galnum)
         for i in indi:
@@ -153,15 +189,18 @@ class ReZSpace(object):
             rp_mpc = dc[i] * rp_rad
             rij = 1 / rp_mpc.value
             sum_rij = sum_rij + np.sum(rij)
-
         radius = (galnum * (galnum - 1) / (sum_rij)) * (np.pi / 2)
         return radius
 
     def _centers(self, xyz, z):
+        """Properties of centers of each halo."""
+        # cartesian coordinates
         xcenter = np.mean(xyz[:, 0])
         ycenter = np.mean(xyz[:, 1])
         zcenter = np.mean(xyz[:, 2])
+        # comoving distance to center
         dc_center_i = np.sqrt(xcenter ** 2 + ycenter ** 2 + zcenter ** 2)
+        # redshift to center
         redshift_center = z_at_value(
             self.cosmo.comoving_distance,
             dc_center_i * u.Mpc,
@@ -171,20 +210,29 @@ class ReZSpace(object):
         return xcenter, ycenter, zcenter, dc_center_i, redshift_center
 
     def _halomass(self, radius, z_center):
+        """Mass of halo."""
+        # use a Navarro profile (Navarro et al. 1997) [1]
         model = NFWProfile(self.cosmo, z_center, mdef=self.delta_c)
         hmass = model.halo_radius_to_halo_mass(radius)
         return hmass
 
     def _group_prop(self, id_groups, groups, xyz):
+        """Properties of halos."""
+        # select only galaxies in groups
         id_groups = id_groups[id_groups > -1]
+        # arrays to store return results
         xyzcenters = np.empty([len(id_groups), 3])
         dc_center = np.empty([len(id_groups)])
         hmass = np.empty([len(id_groups)])
         z_center = np.empty([len(id_groups)])
+        radius = np.empty([len(id_groups)])
+        # run for each group of galaxies
         for i in id_groups:
             mask = [groups == i]
             # halo radius
-            radius = self._radius(self.ra[mask], self.dec[mask], self.z[mask])
+            radius[i] = self._radius(
+                self.ra[mask], self.dec[mask], self.z[mask]
+            )
             # halo center
             x, y, z, dc, z_cen = self._centers(xyz[mask], self.z[mask])
             xyzcenters[i, 0] = x
@@ -192,8 +240,9 @@ class ReZSpace(object):
             xyzcenters[i, 2] = z
             dc_center[i] = dc
             z_center[i] = z_cen
+            # halo mass
             model = NFWProfile(self.cosmo, z_cen, mdef=self.delta_c)
-            hmass[i] = model.halo_radius_to_halo_mass(radius)
+            hmass[i] = model.halo_radius_to_halo_mass(radius[i])
         return xyzcenters, dc_center, z_center, radius, hmass
 
     def _bias(self, h0, mth, omega_m):
@@ -212,37 +261,57 @@ class ReZSpace(object):
         return bhm
 
     def _dc_fog_corr(self, abs_mag, mag_threshold=-20.5, seedvalue=None):
+        """Corrected comoving distance."""
+        # halo properties
+        halos, galingroups = self._dark_matter_halos()
+        # array to store return results
         dcfogcorr = np.zeros(len(self.z))
-        for i in Halo.labels_h_massive:
-            sat_gal_mask = (GalInGroups.groups == i) * (
+        # run for each massive halo
+        for i in halos.labels_h_massive[0]:
+            print(i)
+            # select only galaxies with magnitudes over than -20.5
+            sat_gal_mask = (galingroups.groups == i) * (
                 abs_mag > mag_threshold
             )
+            # number of galaxies for corrections
             numgal = np.sum(sat_gal_mask)
-            nfw = NFWProfile(self.cosmo, Halo.z_centers[i], mdef=self.delta_c)
+            # Monte Carlo simulation for distance
+            nfw = NFWProfile(self.cosmo, halos.z_centers[i], mdef=self.delta_c)
             radial_positions_pos = nfw.mc_generate_nfw_radial_positions(
-                num_pts=300000, halo_radius=Halo.radius[i], seed=seedvalue
+                num_pts=300000, halo_radius=halos.radius[i], seed=seedvalue
             )
             radial_positions_neg = nfw.mc_generate_nfw_radial_positions(
-                num_pts=300000, halo_radius=Halo.radius[i], seed=seedvalue
+                num_pts=300000, halo_radius=halos.radius[i], seed=seedvalue
             )
             radial_positions_neg = -1 * radial_positions_neg
             radial_positions = np.r_[
                 radial_positions_pos, radial_positions_neg
             ]
+            # random choice of distance for each galaxy
             dc = np.random.choice(radial_positions, size=numgal)
-            dcfogcorr[sat_gal_mask] = Halo.dc_centers[i] + dc
-        return dcfogcorr, Halo.dc_centers, Halo.radius, GalInGroups.groups
+            # combine Monte Carlo distance and distance to halo center
+            dcfogcorr[sat_gal_mask] = halos.dc_centers[i] + dc
+        return dcfogcorr, halos.dc_centers, halos.radius, galingroups.groups
 
     def _z_fog_corr(self, dcfogcorr, abs_mag, mag_threshold=-20.5):
+        """Corrected redshift."""
+        # halo properties
+        halos, galingroups = self._dark_matter_halos()
+        # array to store return results
         zfogcorr = np.zeros(len(self.z))
-        for i in Halo.labels_h_massive:
-            sat_gal_mask = (GalInGroups.groups == i) * (
+        # run for each massive halo
+        for i in halos.labels_h_massive[0]:
+            # select only galaxies with magnitudes over than -20.5
+            sat_gal_mask = (galingroups.groups == i) * (
                 abs_mag > mag_threshold
             )
+            # number of galaxies for corrections
             numgal = np.sum(sat_gal_mask)
             z_galaxies = np.zeros(numgal)
             dc_galaxies = dcfogcorr[sat_gal_mask]
             redshift = self.z[sat_gal_mask]
+            # corrected redshift of each galaxy
+            # run for each galaxy
             for j in range(numgal):
                 z_galaxies[j] = z_at_value(
                     self.cosmo.comoving_distance,
@@ -355,6 +424,17 @@ class ReZSpace(object):
     def fogcorr(self, abs_mag, mag_threshold=-20.5, seedvalue=None):
         """Corrects the Finger of God effect only.
 
+        Parameters
+        ----------
+        abs_mag : array_like
+            Absolute magnitudes of galaxies.
+        mag_threshold : float, optional
+            The threshold absolute magnitude that determines luminous center
+            galaxies of each group. Default is -20.5.
+        seedvalue : int, optional
+            Random number seed used in the Monte Carlo realization.
+            Default is None, which will produce stochastic results.
+
         Returns
         -------
         dcfogcorr : array_like
@@ -364,6 +444,18 @@ class ReZSpace(object):
         zfogcorr : array_like
             Redshift of galaxies after apply corrections for FoG
             effect. Array has the same lengh that the input array z.
+
+        Example
+        --------
+        >>> rzs = bt.ReZSpace(ra, dec, z)
+        >>> dcfogcorr, zfogcorr = rzs.fogcorr(mags)
+
+        Notes:
+        ------
+        This method use a Monte Carlo simulation to produce a NFW profile for
+        the distances. The obtained distribution has 300000 values.
+        Positions of luminous center galaxies are not corrected, only
+        satellite galaxies. For this is use the magnitude threshold.
 
 
         """
@@ -379,8 +471,19 @@ class ReZSpace(object):
 
     #    Re-real space reconstructed real space; based on correcting redshift
     #    space distortions
-    def realspace(self):
+    def realspace(self, abs_mag, mag_threshold=-20.5, seedvalue=None):
         """Corrects Kaiser and FoG effect.
+
+        Parameters
+        ----------
+        abs_mag : array_like
+            Absolute magnitudes of galaxies.
+        mag_threshold : float, optional
+            The threshold absolute magnitude that determines luminous center
+            galaxies of each group. Default is -20.5.
+        seedvalue : int, optional
+            Random number seed used in the Monte Carlo realization.
+            Default is None, which will produce stochastic results.
 
         Returns
         -------
@@ -392,16 +495,27 @@ class ReZSpace(object):
             Redshift of galaxies after apply corrections for Kaiser and FoG
             effects. Array has the same lengh that the input array z.
 
+        Notes:
+        ------
+        This method calls Kaisercorrr and Fogcorr methods, and combains
+        their results.
+        The method fogcorr use a Monte Carlo simulation to produce a NFW
+        profile for the distances. The obtained distribution has 300000
+        values.
+        Positions of luminous center galaxies are not corrected for fogcorr,
+        only satellite galaxies. For this is use the magnitude threshold.
+
         """
-        dcfogcorr, zfogcorr = self.fogcorr()
+        halos, galingroups = self._dark_matter_halos()
+        dcfogcorr, zfogcorr = self.fogcorr(abs_mag, mag_threshold, seedvalue)
         dckaisercorr, zkaisercorr = self.kaisercorr()
         dc = dcfogcorr + dckaisercorr
         zcorr = np.zeros(len(self.z))
         for i in Halo.labels_h_massive:
-            numgal = np.sum(GalInGroups.groups == i)
+            numgal = np.sum(galingroups.groups == i)
             z_galaxies = np.zeros(numgal)
-            dc_galaxies = dc[GalInGroups.groups == i]
-            redshift = self.z[GalInGroups.groups == i]
+            dc_galaxies = dc[galingroups.groups == i]
+            redshift = self.z[galingroups.groups == i]
             for j in range(numgal):
                 z_galaxies[j] = z_at_value(
                     self.cosmo.comoving_distance,
@@ -409,5 +523,5 @@ class ReZSpace(object):
                     zmin=redshift.min() - 0.01,
                     zmax=redshift.max() + 0.01,
                 )
-            zcorr[GalInGroups.groups == i] = z_galaxies
+            zcorr[galingroups.groups == i] = z_galaxies
         return dc, zcorr
