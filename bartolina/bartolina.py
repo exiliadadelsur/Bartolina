@@ -370,7 +370,7 @@ class ReZSpace(object):
         ).T
         return valingrid
 
-    def _positioncube(self, valingrid, mass, n):
+    def _density(self, valingrid, mass, n):
 
         x = np.arange(0, n)
         cube = np.array(np.meshgrid(x, x, x)).T.reshape(-1, 3)
@@ -413,7 +413,7 @@ class ReZSpace(object):
         bhm = self._bias(self.cosmo.H0, self.Mth, self.cosmo.Om0)
 
         # Calculate overdensity field
-        delta = self._positioncube(valingrid, Halo.mass, 1024)
+        delta = self._density(valingrid, Halo.mass, 1024)
 
         f = self.cosmo.Om0 ** 0.6 + 1 / 70 * self.cosmo.Ode0 * (
             1 + self.cosmo.Om0
