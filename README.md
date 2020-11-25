@@ -7,10 +7,9 @@ Bartolina has the principal class:
 * **ReZspace**: Sets parameters such as the cosmology to use and allows a set of methods. 
 
 Bartolina has the following methods:
-* **Halos**: Find massive dark matter haloes and cartesian coordinates of his centers. Necesary for all the other methods.
-* **Kaisercorr**: Corrects the Kaiser effect only.
-* **FoGcorr**: Corrects the Finger of God effect only.
-* **RealSpace**: Corrects both effects (Kaiser and FoG).
+* **kaisercorr**: Corrects the Kaiser effect only.
+* **fogcorr**: Corrects the Finger of God effect only.
+* **realspace**: Corrects both effects (Kaiser and FoG).
 
 ## Requirements
 
