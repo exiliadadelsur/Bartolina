@@ -320,55 +320,20 @@ class ReZSpace(object):
             zfogcorr[sat_gal_mask] = z_galaxies
         return zfogcorr
 
-    def _z_realspace(self, dc, halos, galingroups):
-        zcorr = np.zeros(len(self.z))
-        for i in halos.labels_h_massive[0]:
-            numgal = np.sum(galingroups.groups == i)
-            z_galaxies = np.zeros(numgal)
-            dc_galaxies = dc[galingroups.groups == i]
-            redshift = self.z[galingroups.groups == i]
-            # run for each galaxy
-            for j in range(numgal):
-                z_galaxies[j] = z_at_value(
-                    self.cosmo.comoving_distance,
-                    dc_galaxies[j] * u.Mpc,
-                    zmin=redshift.min() - 0.01,
-                    zmax=redshift.max() + 0.01,
-                )
-            zcorr[galingroups.groups == i] = z_galaxies
-        return zcorr
-
-    # ========================================================================
-    # Public methods
-    # ========================================================================
-
-    def kaisercorr(self):
-        """Corrects the Kaiser effect.
-
-        Returns
-        -------
-        dckaisercorr : array_like
-            Comoving distance to each galaxy after apply corrections for
-            Kaiser effect. Array has the same lengh that the input
-            array z.
-        zkaisercorr : array_like
-            Redshift of galaxies after apply corrections for Kaiser
-            effect. Array has the same lengh that the input array z.
-
-        """
-        self.xyzcenters = self.xyzcenters[self.labelshmassive]
+    def _grid3d(self, centros, labels):
+        centros = centros[labels]
         inf = np.array(
             [
-                self.xyzcenters[:, 0].min(),
-                self.xyzcenters[:, 1].min(),
-                self.xyzcenters[:, 2].min(),
+                centros[:, 0].min(),
+                centros[:, 1].min(),
+                centros[:, 2].min(),
             ]
         )
         sup = np.array(
             [
-                self.xyzcenters[:, 0].max(),
-                self.xyzcenters[:, 1].max(),
-                self.xyzcenters[:, 2].max(),
+                centros[:, 0].max(),
+                centros[:, 1].max(),
+                centros[:, 2].max(),
             ]
         )
         rangeaxis = sup - inf
@@ -391,38 +356,87 @@ class ReZSpace(object):
         binesy = np.linspace(liminf[1], limsup[1], 1025)
         binesz = np.linspace(liminf[2], limsup[2], 1025)
         binnum = np.arange(0, 1024)
-        xdist = pd.cut(self.xyzcenters[:, 0], bins=binesx, labels=binnum)
-        ydist = pd.cut(self.xyzcenters[:, 1], bins=binesy, labels=binnum)
-        zdist = pd.cut(self.xyzcenters[:, 2], bins=binesz, labels=binnum)
-        self.valingrid = np.array(
+        xdist = pd.cut(centros[:, 0], bins=binesx, labels=binnum)
+        ydist = pd.cut(centros[:, 1], bins=binesy, labels=binnum)
+        zdist = pd.cut(centros[:, 2], bins=binesz, labels=binnum)
+        valingrid = np.array(
             [
                 np.array([xdist]),
                 np.array([ydist]),
                 np.array([zdist]),
             ]
         ).T
+        return valingrid
 
-        bhm = self._bias(self.cosmo.H0, self.Mth, self.cosmo.Om0)
+    def _density(self, valingrid, mass, n):
 
-        x = np.arange(0, 1024)
+        x = np.arange(0, n)
         cube = np.array(np.meshgrid(x, x, x)).T.reshape(-1, 3)
-
-        indexcube = np.zeros(1024 ** 3)
-        for i in range(len(self.valingrid)):
-            var = cube - self.valingrid[i]
+        indexcube = np.zeros(n ** 3)
+        for i in range(len(valingrid)):
+            var = cube - valingrid[i]
             idcellsempty = np.where(
                 (var[:, 0] == 0) & (var[:, 1] == 0) & (var[:, 2] == 0)
             )
-            indexcube[idcellsempty] = self.mass[i]
+            indexcube[idcellsempty] = mass[i]
 
-        self.rho_h = np.sum(self.mass) / (1024 ** 3)
-        self.delta = np.where(indexcube == 0, self.rho_h, indexcube)
+        rho_h = np.sum(mass) / (n ** 3)
+        delta = np.where(indexcube == 0, rho_h, indexcube)
+        return delta
+
+    def _z_realspace(self, dc, halos, galingroups):
+        zcorr = np.zeros(len(self.z))
+        for i in halos.labels_h_massive[0]:
+            numgal = np.sum(galingroups.groups == i)
+            z_galaxies = np.zeros(numgal)
+            dc_galaxies = dc[galingroups.groups == i]
+            redshift = self.z[galingroups.groups == i]
+            # run for each galaxy
+            for j in range(numgal):
+                z_galaxies[j] = z_at_value(
+                    self.cosmo.comoving_distance,
+                    dc_galaxies[j] * u.Mpc,
+                    zmin=redshift.min() - 0.01,
+                    zmax=redshift.max() + 0.01,
+                )
+            zcorr[galingroups.groups == i] = z_galaxies
+        return zcorr
+    
+    # ========================================================================
+    # Public methods
+    # ========================================================================
+
+    def kaisercorr(self):
+        """Corrects the Kaiser effect.
+
+        Returns
+        -------
+        dckaisercorr : array_like
+            Comoving distance to each galaxy after apply corrections for
+            Kaiser effect. Array has the same lengh that the input
+            array z.
+        zkaisercorr : array_like
+            Redshift of galaxies after apply corrections for Kaiser
+            effect. Array has the same lengh that the input array z.
+
+        """
+
+        # Construct the 3d grid and return the cells in which the centers
+        # of the halos are found
+        valingrid = self._grid3d(Halo.xyzcenters, Halo.labels_h_massive)
+
+        # Calculate bias
+        bhm = self._bias(self.cosmo.H0, self.Mth, self.cosmo.Om0)
+
+        # Calculate overdensity field
+        delta = self._density(valingrid, Halo.mass, 1024)
 
         f = self.cosmo.Om0 ** 0.6 + 1 / 70 * self.cosmo.Ode0 * (
             1 + self.cosmo.Om0
         )
 
-        v = np.fft.fft(self.cosmo.H0 * 1 * f * np.fft.fft(self.delta) / bhm)
+        ################################################################
+        v = np.fft.fft(self.cosmo.H0 * 1 * f * np.fft.fft(delta) / bhm)
 
         zkaisercorr = np.zeros((len(self.clustering.labels_)))
 
@@ -434,7 +448,7 @@ class ReZSpace(object):
 
         dckaisercorr = self.cosmo.comoving_distance(zkaisercorr)
 
-        return dckaisercorr, zkaisercorr
+        return dckaisercorr, zkaisercorr, v
 
     #   reconstructed Kaiser space; based on correcting for FoG effect only
     def fogcorr(self, abs_mag, mag_threshold=-20.5, seedvalue=None):
