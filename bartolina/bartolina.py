@@ -85,8 +85,8 @@ class ReZSpace(object):
     realspace
         Corrects both effects (Kaiser and FoG).
 
-    Notes:
-    ------
+    Notes
+    -----
     For the corrections is needed the center, radius and mass of
     each dark matter halo. For this, we consider the geometric center, and the
     mass is calculated following a NFW profile (Navarro et al. 1997 [1]).
@@ -98,8 +98,8 @@ class ReZSpace(object):
     package, selecting the eps and min_samples parameters to obtanied the same
     galaxy groups of Zapata et al. (2009) [3] that have more of 150 members.
 
-    References:
-    -----------
+    References
+    ----------
     [1] Navarro J. F., Frenk C. S., White S. D., 1997, Apj, 490, 493
     [2] Merchán M., Zandivarez A., 2005, Apj, 630, 759
     [3] Zapata T., Pérez J., Padilla N., & Tissera P., 2009, MNRAS, 394, 2229
@@ -401,7 +401,7 @@ class ReZSpace(object):
                 )
             zcorr[galingroups.groups == i] = z_galaxies
         return zcorr
-    
+
     # ========================================================================
     # Public methods
     # ========================================================================
@@ -420,7 +420,6 @@ class ReZSpace(object):
             effect. Array has the same lengh that the input array z.
 
         """
-
         # Construct the 3d grid and return the cells in which the centers
         # of the halos are found
         valingrid = self._grid3d(Halo.xyzcenters, Halo.labels_h_massive)
@@ -476,12 +475,12 @@ class ReZSpace(object):
             effect. Array has the same lengh that the input array z.
 
         Example
-        --------
+        -------
         >>> rzs = bt.ReZSpace(ra, dec, z)
         >>> dcfogcorr, zfogcorr = rzs.fogcorr(mags)
 
-        Notes:
-        ------
+        Notes
+        -----
         This method use a Monte Carlo simulation to produce a NFW profile for
         the distances. The obtained distribution has 300000 values.
         Positions of luminous center galaxies are not corrected, only
@@ -529,8 +528,8 @@ class ReZSpace(object):
             Redshift of galaxies after apply corrections for Kaiser and FoG
             effects. Array has the same lengh that the input array z.
 
-        Notes:
-        ------
+        Notes
+        -----
         This method calls Kaisercorrr and Fogcorr methods, and combains
         their results.
         The method fogcorr use a Monte Carlo simulation to produce a NFW
