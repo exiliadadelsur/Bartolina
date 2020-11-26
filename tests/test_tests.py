@@ -131,11 +131,8 @@ def test_dark_matter_halos_radius(bt):
 
 def test_dark_matter_halos_hmassive(bt):
     halos, galingroups = bt._dark_matter_halos()
-    assert halos.labels_h_massive.ndim[0] == 1
     # massive halos array length
-    assert len(halos.labels_h_massive[0]) == 35389
-    # type of value, massive halos array
-    assert isinstance(halos.labels_h_massive[0], int)
+    assert len(halos.labels_h_massive[0]) == 34487
 
 
 def test_bias(bt):
