@@ -322,7 +322,7 @@ class ReZSpace(object):
 
     def _grid3d(self, centers, labels):
         centers = centers[labels]
-        #Define axis limits
+        # Define axis limits
         inf = np.array(
             [
                 centers[:, 0].min(),
@@ -337,11 +337,13 @@ class ReZSpace(object):
                 centers[:, 2].max(),
             ]
         )
-        #Define axis ranges
+        # Define axis ranges
         rangeaxis = sup - inf
+        # Largest axis range
         maxaxis = np.argmax(rangeaxis)
         liminf = np.zeros((3))
         limsup = np.zeros((3))
+        # Define the grid axis. It's 100 h-1 Mpc larger than the major axis
         for i in range(3):
             if i == maxaxis:
                 liminf[i] = inf[i] - 50
@@ -353,7 +355,7 @@ class ReZSpace(object):
                 limsup[i] = (
                     sup[i] + (rangeaxis[maxaxis] + 100 - rangeaxis[i]) / 2
                 )
-
+        # Define 1024 cells
         binesx = np.linspace(liminf[0], limsup[0], 1025)
         binesy = np.linspace(liminf[1], limsup[1], 1025)
         binesz = np.linspace(liminf[2], limsup[2], 1025)
@@ -456,8 +458,9 @@ class ReZSpace(object):
         v = np.fft.fft(self.cosmo.H0 * 1 * f * np.fft.fft(delta) / bhm)
 
         zkaisercorr = (halos.z_centers - v / const.c.value) / (
-            1 + v / const.c.value)
-        
+            1 + v / const.c.value
+        )
+
         dckaisercorr = self.cosmo.comoving_distance(zkaisercorr)
 
         return dckaisercorr, zkaisercorr
