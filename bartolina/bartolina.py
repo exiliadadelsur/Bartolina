@@ -419,16 +419,32 @@ class ReZSpace(object):
             Redshift of galaxies after apply corrections for Kaiser
             effect. Array has the same lengh that the input array z.
 
+        Example
+        --------
+        >>> rzs = bt.ReZSpace(ra, dec, z)
+        >>> dckaisercorr, zkaisercorr = rzs.kaisercorr()
+
+        Notes
+        -----
+        We embed the survey volume in a cube box whose linear size is chosen
+        to be about 100 h^-1 Mpc larger than then maximal scale of the survey
+        volume among the three axes. We compute the overdensity field of
+        groups and based on Colombi, Chodorowski & Teyssier, 2007 we compute
+        the peculiar velocity corrected. Finally we found the cosmological
+        redshift of each group.
+
         """
+        halos, galingroups = self._dark_matter_halos()
+
         # Construct the 3d grid and return the cells in which the centers
         # of the halos are found
-        valingrid = self._grid3d(Halo.xyzcenters, Halo.labels_h_massive)
+        valingrid = self._grid3d(halos.xyzcenters, halos.labels_h_massive)
 
         # Calculate bias
         bhm = self._bias(self.cosmo.H0, self.Mth, self.cosmo.Om0)
 
         # Calculate overdensity field
-        delta = self._density(valingrid, Halo.mass, 1024)
+        delta = self._density(valingrid, halos.mass, 1024)
 
         f = self.cosmo.Om0 ** 0.6 + 1 / 70 * self.cosmo.Ode0 * (
             1 + self.cosmo.Om0
