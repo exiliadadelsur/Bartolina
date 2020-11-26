@@ -320,22 +320,24 @@ class ReZSpace(object):
             zfogcorr[sat_gal_mask] = z_galaxies
         return zfogcorr
 
-    def _grid3d(self, centros, labels):
-        centros = centros[labels]
+    def _grid3d(self, centers, labels):
+        centers = centers[labels]
+        #Define axis limits
         inf = np.array(
             [
-                centros[:, 0].min(),
-                centros[:, 1].min(),
-                centros[:, 2].min(),
+                centers[:, 0].min(),
+                centers[:, 1].min(),
+                centers[:, 2].min(),
             ]
         )
         sup = np.array(
             [
-                centros[:, 0].max(),
-                centros[:, 1].max(),
-                centros[:, 2].max(),
+                centers[:, 0].max(),
+                centers[:, 1].max(),
+                centers[:, 2].max(),
             ]
         )
+        #Define axis ranges
         rangeaxis = sup - inf
         maxaxis = np.argmax(rangeaxis)
         liminf = np.zeros((3))
@@ -356,9 +358,9 @@ class ReZSpace(object):
         binesy = np.linspace(liminf[1], limsup[1], 1025)
         binesz = np.linspace(liminf[2], limsup[2], 1025)
         binnum = np.arange(0, 1024)
-        xdist = pd.cut(centros[:, 0], bins=binesx, labels=binnum)
-        ydist = pd.cut(centros[:, 1], bins=binesy, labels=binnum)
-        zdist = pd.cut(centros[:, 2], bins=binesz, labels=binnum)
+        xdist = pd.cut(centers[:, 0], bins=binesx, labels=binnum)
+        ydist = pd.cut(centers[:, 1], bins=binesy, labels=binnum)
+        zdist = pd.cut(centers[:, 2], bins=binesz, labels=binnum)
         valingrid = np.array(
             [
                 np.array([xdist]),
@@ -453,17 +455,12 @@ class ReZSpace(object):
         ################################################################
         v = np.fft.fft(self.cosmo.H0 * 1 * f * np.fft.fft(delta) / bhm)
 
-        zkaisercorr = np.zeros((len(self.clustering.labels_)))
-
-        for i in self.unique_elements:
-            masc = [self.clustering.labels_ == i]
-            zkaisercorr[masc] = (self.z[masc] - v[i] / const.c.value) / (
-                1 + v[i] / const.c.value
-            )
-
+        zkaisercorr = (halos.z_centers - v / const.c.value) / (
+            1 + v / const.c.value)
+        
         dckaisercorr = self.cosmo.comoving_distance(zkaisercorr)
 
-        return dckaisercorr, zkaisercorr, v
+        return dckaisercorr, zkaisercorr
 
     #   reconstructed Kaiser space; based on correcting for FoG effect only
     def fogcorr(self, abs_mag, mag_threshold=-20.5, seedvalue=None):
