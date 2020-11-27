@@ -359,3 +359,16 @@ def test_density(bt):
         ]
     )
     npt.assert_almost_equal(delta, array)
+
+
+def test_f(bt):
+    f = bt._calcf(0.27, 0.73)
+    npt.assert_almost_equal(f, 0.4690904014151921, 10)
+
+
+def test_zkaisercorr(bt):
+    z = np.array([0.1, 0.12, 0.09])
+    v = np.array([1.58, 1.7, 1.63])
+    array = np.array([0.09999999, 0.11999999, 0.08999999])
+    zcorr = bt._zkaisercorr(z, v)
+    npt.assert_almomost_equal(array, zcorr)

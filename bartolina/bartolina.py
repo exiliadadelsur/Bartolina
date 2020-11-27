@@ -25,6 +25,7 @@ import numpy as np
 import pandas as pd
 
 from sklearn.cluster import DBSCAN
+from scipy import fftpack
 
 
 @attr.s(frozen=True)
@@ -327,6 +328,16 @@ class ReZSpace(object):
         return zfogcorr
 
     def _grid3d(self, centers, labels):
+
+        inf, sup = self._grid3d_axislim(centers, labels)
+
+        liminf, limsup = self._grid3d_gridlim(inf, sup)
+
+        valingrid = self._grid3dcells(liminf, limsup, centers, 1024)
+
+        return valingrid
+
+    def _grid3d_axislim(self, centers, labels):
         centers = centers[labels]
         # Define axis limits
         inf = np.array(
@@ -343,6 +354,9 @@ class ReZSpace(object):
                 centers[:, 2].max(),
             ]
         )
+        return inf, sup
+
+    def _grid3d_gridlim(self, inf, sup):
         # Define axis ranges
         rangeaxis = sup - inf
         # Largest axis range
@@ -361,11 +375,15 @@ class ReZSpace(object):
                 limsup[i] = (
                     sup[i] + (rangeaxis[maxaxis] + 100 - rangeaxis[i]) / 2
                 )
-        # Define 1024 cells
-        binesx = np.linspace(liminf[0], limsup[0], 1025)
-        binesy = np.linspace(liminf[1], limsup[1], 1025)
-        binesz = np.linspace(liminf[2], limsup[2], 1025)
-        binnum = np.arange(0, 1024)
+        return liminf, limsup
+
+    def _grid3dcells(self, liminf, limsup, centers, nbines):
+        # Define cells
+        binesx = np.linspace(liminf[0], limsup[0], nbines + 1)
+        binesy = np.linspace(liminf[1], limsup[1], nbines + 1)
+        binesz = np.linspace(liminf[2], limsup[2], nbines + 1)
+        binnum = np.arange(0, nbines)
+        # Define center's cells
         xdist = pd.cut(centers[:, 0], bins=binesx, labels=binnum)
         ydist = pd.cut(centers[:, 1], bins=binesy, labels=binnum)
         zdist = pd.cut(centers[:, 2], bins=binesz, labels=binnum)
@@ -394,10 +412,22 @@ class ReZSpace(object):
         delta = np.where(indexcube == 0, rho_h, indexcube)
         return delta
 
+    def _calcf(self, omegam, omegalambda):
+
+        f = omegam ** 0.6 + 1 / 70 * omegalambda * (1 + omegam)
+        return f
+
+    def _zkaisercorr(self, zcenters, velocity):
+        zkaisercorr = (zcenters - velocity / const.c.value) / (
+            1 + velocity / const.c.value
+        )
+        return zkaisercorr
+
     # ========================================================================
     # Public methods
     # ========================================================================
 
+    # Reconstructed FoG space; based on correcting for Kaiser effect only
     def kaisercorr(self):
         """Corrects the Kaiser effect.
 
@@ -438,22 +468,18 @@ class ReZSpace(object):
         # Calculate overdensity field
         delta = self._density(valingrid, halos.mass, 1024)
 
-        f = self.cosmo.Om0 ** 0.6 + 1 / 70 * self.cosmo.Ode0 * (
-            1 + self.cosmo.Om0
-        )
+        f = self._calcf(self.cosmo.Om0, self.cosmo.Ode0)
 
         ################################################################
-        v = np.fft.fft(self.cosmo.H0 * 1 * f * np.fft.fft(delta) / bhm)
+        v = fftpack.ifft(self.cosmo.H0 * 1 * f * fftpack.fft(delta) / bhm)
 
-        zkaisercorr = (halos.z_centers - v / const.c.value) / (
-            1 + v / const.c.value
-        )
+        zkaisercorr = self._zkaisercorr(halos.z_centers, v)
 
         dckaisercorr = self.cosmo.comoving_distance(zkaisercorr)
 
         return dckaisercorr, zkaisercorr
 
-    #   reconstructed Kaiser space; based on correcting for FoG effect only
+    # Reconstructed Kaiser space; based on correcting for FoG effect only
     def fogcorr(self, abs_mag, mag_threshold=-20.5, seedvalue=None):
         """Corrects the Finger of God effect only.
 
