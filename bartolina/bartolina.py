@@ -260,7 +260,13 @@ class ReZSpace(object):
         return bhm
 
     def _dc_fog_corr(
-        self, abs_mag, halos, galingroups, mag_threshold=-20.5, seedvalue=None
+        self,
+        abs_mag,
+        halos,
+        galingroups,
+        halo_centers,
+        mag_threshold=-20.5,
+        seedvalue=None,
     ):
         """Corrected comoving distance."""
         # array to store return results
@@ -288,8 +294,8 @@ class ReZSpace(object):
             # random choice of distance for each galaxy
             dc = np.random.choice(radial_positions, size=numgal)
             # combine Monte Carlo distance and distance to halo center
-            dcfogcorr[sat_gal_mask] = halos.dc_centers[i] + dc
-        return dcfogcorr, halos.dc_centers, halos.radius, galingroups.groups
+            dcfogcorr[sat_gal_mask] = halo_centers[i] + dc
+        return dcfogcorr, halo_centers, halos.radius, galingroups.groups
 
     def _z_fog_corr(
         self, dcfogcorr, abs_mag, halos, galingroups, mag_threshold=-20.5
@@ -387,24 +393,6 @@ class ReZSpace(object):
         rho_h = np.sum(mass) / (n ** 3)
         delta = np.where(indexcube == 0, rho_h, indexcube)
         return delta
-
-    def _z_realspace(self, dc, halos, galingroups):
-        zcorr = np.zeros(len(self.z))
-        for i in halos.labels_h_massive[0]:
-            numgal = np.sum(galingroups.groups == i)
-            z_galaxies = np.zeros(numgal)
-            dc_galaxies = dc[galingroups.groups == i]
-            redshift = self.z[galingroups.groups == i]
-            # run for each galaxy
-            for j in range(numgal):
-                z_galaxies[j] = z_at_value(
-                    self.cosmo.comoving_distance,
-                    dc_galaxies[j] * u.Mpc,
-                    zmin=redshift.min() - 0.01,
-                    zmax=redshift.max() + 0.01,
-                )
-            zcorr[galingroups.groups == i] = z_galaxies
-        return zcorr
 
     # ========================================================================
     # Public methods
@@ -507,7 +495,12 @@ class ReZSpace(object):
         # halo properties
         halos, galingroups = self._dark_matter_halos()
         dcfogcorr, dc_centers, radius, groups = self._dc_fog_corr(
-            abs_mag, halos, galingroups, mag_threshold, seedvalue
+            abs_mag,
+            halos,
+            galingroups,
+            halos.dc_centers,
+            mag_threshold,
+            seedvalue,
         )
         zfogcorr = self._z_fog_corr(
             dcfogcorr, abs_mag, halos, galingroups, mag_threshold
@@ -559,18 +552,17 @@ class ReZSpace(object):
         dc = np.zeros(len(self.z))
         # properties of halos
         halos, galingroups = self._dark_matter_halos()
-        # FoG correction with fogcorr method
-        dcfogcorr, zfogcorr = self.fogcorr(abs_mag, mag_threshold, seedvalue)
         # Kaiser correction with kaisercorr method
-        dckaisercorr, zkaisercorr, v_cen = self.kaisercorr()
-        # combine the two results
-        ids = galingroups.id_groups[galingroups.id_groups > -1]
-        for i in ids:
-            mask = [galingroups.groups == i]
-            dc[mask] = (self.z[mask] - v_cen[i] / const.c.value) / (
-                1 + v_cen[i] / const.c.value
-            )
+        dckaisercorr, zkaisercorr = self.kaisercorr()
+        # FoG correction with fogcorr method
+        dccorr, dc_centers, radius, groups = self._dc_fog_corr(
+            abs_mag, halos, galingroups, dckaisercorr, mag_threshold, seedvalue
+        )
+        zcorr = self._z_fog_corr(
+            dccorr, abs_mag, halos, galingroups, mag_threshold
+        )
+        dccorr[dccorr == 0] = self.cosmo.comoving_distance(self.z[dccorr == 0])
+        zcorr[zcorr == 0] = self.z[zcorr == 0]
         # corrected redshift of each galaxy
         # run for each massive halo
-        zcorr = self._z_realspace(dc, halos, galingroups)
         return dc, zcorr
