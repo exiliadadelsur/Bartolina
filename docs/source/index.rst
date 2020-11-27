@@ -10,7 +10,7 @@ Welcome to Bartolina's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   source/api/modules.rts
+   /api/modules.rts
 
 Indices and tables
 ==================
