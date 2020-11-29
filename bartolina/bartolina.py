@@ -413,6 +413,7 @@ class ReZSpace(object):
 
         Example
         --------
+        >>> import bartolina as bt        
         >>> rzs = bt.ReZSpace(ra, dec, z)
         >>> dckaisercorr, zkaisercorr = rzs.kaisercorr()
 
@@ -480,6 +481,7 @@ class ReZSpace(object):
 
         Example
         -------
+        >>> import bartolina as bt
         >>> rzs = bt.ReZSpace(ra, dec, z)
         >>> dcfogcorr, zfogcorr = rzs.fogcorr(mags)
 
