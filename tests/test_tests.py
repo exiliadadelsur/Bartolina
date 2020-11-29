@@ -147,7 +147,6 @@ def test_bias(bt):
 #    bt.kaisercorr()
 #    unique_elements, counts_elements = np.unique(
 #        bt.valingrid, axis=0, return_counts=True
-#    )
 #    assert len(unique_elements) == len(counts_elements)
 
 
