@@ -141,16 +141,6 @@ def test_bias(bt):
     npt.assert_almost_equal(bias, expected_bias, 8)  # equal within 8 decimals
 
 
-# def test_grid3d(bt):
-
-#    bt.halos()
-#    bt.kaisercorr()
-#    unique_elements, counts_elements = np.unique(
-#        bt.valingrid, axis=0, return_counts=True
-#    )
-#    assert len(unique_elements) == len(counts_elements)
-
-
 def test_dc_fog_corr_len(table):
     table = table[table["ABSR"] > -20.6]
     table = table[table["ABSR"] < -20.4]
@@ -224,7 +214,6 @@ def test_fogcorr_zluminous(table):
 #    assert len(z) == len(rzs.z)
 
 
-@pytest.mark.webtest
 def test_density(bt):
     valingrid = np.array([[1, 2, 3], [4, 3, 1], [0, 3, 4]])
     hmass = np.array([12, 50, 15])
@@ -372,3 +361,14 @@ def test_zkaisercorr(bt):
     array = np.array([0.09999999, 0.11999999, 0.08999999])
     zcorr = bt._zkaisercorr(z, v)
     npt.assert_almomost_equal(array, zcorr)
+
+
+@pytest.mark.webtest
+def test_grid3daxislim(bt):
+    halos, galingroups = bt._dark_matter_halos()
+    centers, labels = halos.xyzcenters, halos.labels_h_massive
+    inf, sup = bt._grid3d(centers, labels)
+    i = 1
+    s = 3
+    npt.assert_almost_equal(inf, i)
+    npt.assert_almost_equal(sup, s)
