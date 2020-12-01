@@ -365,10 +365,37 @@ def test_zkaisercorr(bt):
 
 @pytest.mark.webtest
 def test_grid3daxislim(bt):
-    halos, galingroups = bt._dark_matter_halos()
-    centers, labels = halos.xyzcenters, halos.labels_h_massive
-    inf, sup = bt._grid3d(centers, labels)
+    xyz = bt._xyzcoordinates()
+    groups, id_groups = bt._groups(xyz)
+    xcen, ycen, zcen, dc_center_i, redshift_center = bt._centers(xyz, bt.z)
+    centers = np.array([xcen, ycen, zcen]).T
+    inf, sup = bt._grid3d(centers, groups)
     i = 1
     s = 3
     npt.assert_almost_equal(inf, i)
     npt.assert_almost_equal(sup, s)
+
+
+def test_grid3dgridlim(bt):
+    xyz = bt._xyzcoordinates()
+    groups, id_groups = bt._groups(xyz)
+    xcen, ycen, zcen, dc_center_i, redshift_center = bt._centers(xyz, bt.z)
+    centers = np.array([xcen, ycen, zcen]).T
+    inf, sup = bt._grid3d(centers, groups)
+    liminf, limsup = bt._grid3d_gridlim(inf, sup)
+    i = np.array([0, 0, 0])
+    s = np.array([0, 0, 0])
+    npt.assert_almost_equal(liminf, i)
+    npt.assert_almost_equal(limsup, s)
+
+
+# def test_grid3dcells(bt):
+#    xyz = bt._xyzcoordinates()
+#    groups, id_groups = bt._groups(xyz)
+#    xcen, ycen, zcen, dc_center_i, redshift_center = bt._centers(xyz, bt.z)
+#    centers = np.array([xcen,ycen,zcen]).T
+#    inf, sup = bt._grid3d(centers, groups)
+#    liminf, limsup = bt._grid3d_gridlim(inf, sup)
+#    nbines = 1024
+#    valingrid = bt._grid3dcells(liminf, limsup, centers, nbines)
+#    npt.assert_almost_equal(valingrid, )
