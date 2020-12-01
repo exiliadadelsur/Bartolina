@@ -389,7 +389,9 @@ def test_grid3dcells(bt):
     liminf = np.array([0, 0, 0])
     limsup = np.array([5, 5, 5])
     nbines = 6
-    centers = np.array([[1, 1, 2], [3, 5, 3], [2, 3, 1], [1, 2, 1]])
-    array = np.array([[[1, 1, 2]], [[3, 5, 3]], [[2, 3, 1]], [[1, 2, 1]]])
+    centers = np.array(
+        [[1.1, 0.1, 2.4], [3.5, 4.6, 3.2], [2.1, 3.7, 1.1], [1, 2, 1]]
+    )
+    array = np.array([[[1, 0, 2]], [[4, 5, 3]], [[2, 4, 1]], [[1, 2, 1]]])
     valingrid = bt._grid3dcells(liminf, limsup, centers, nbines)
     npt.assert_almost_equal(valingrid, array)
