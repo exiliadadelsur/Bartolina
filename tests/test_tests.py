@@ -367,7 +367,7 @@ def test_zkaisercorr(bt):
 def test_grid3daxislim(bt):
     halos, galingroups = bt._dark_matter_halos()
     centers, labels = halos.xyzcenters, halos.labels_h_massive
-    inf, sup = bt._grid3d(centers, labels)
+    inf, sup = bt._grid3daxislim(centers, labels)
     i = 1
     s = 3
     npt.assert_almost_equal(inf, i)
@@ -377,7 +377,7 @@ def test_grid3daxislim(bt):
 def test_grid3dgridlim(bt):
     halos, galingroups = bt._dark_matter_halos()
     centers, labels = halos.xyzcenters, halos.labels_h_massive
-    inf, sup = bt._grid3d(centers, labels)
+    inf, sup = bt._grid3daxislim(centers, labels)
     liminf, limsup = bt._grid3d_gridlim(inf, sup)
     i = np.array([0, 0, 0])
     s = np.array([0, 0, 0])
