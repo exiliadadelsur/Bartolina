@@ -491,7 +491,7 @@ class ReZSpace(object):
             The threshold absolute magnitude that determines luminous center
             galaxies of each group. Default is -20.5.
         seedvalue : int, optional
-            Random number seed used in the Monte Carlo realization.
+            Random number seed used in the Monte Carlo realization.ismo error.
             Default is None, which will produce stochastic results.
 
         Returns

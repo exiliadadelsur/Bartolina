@@ -104,3 +104,7 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# Propios
+Diagrama1.dia
+Bartolina.jpg
