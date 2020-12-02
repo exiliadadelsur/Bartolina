@@ -47,35 +47,7 @@ def bt(table):
 # ============================================================================
 # TESTS
 # ============================================================================
-@pytest.mark.porfavorfunciona
-def test_pmesh(bt):
-    xyz = bt._xyzcoordinates()
-    groups, id_groups = bt._groups(xyz)
-    xcen, ycen, zcen, dc_center_i, redshift_center = bt._centers(xyz, bt.z)
-    import pmesh
-    # Creo la grilla
-    pm = pmesh.ParticleMesh(BoxSize=500,Nmesh=np.array([20,20,20]))
-    smoothing = 1.0 * pm.Nmesh / pm.BoxSize
-    # Ubico los puntos en la grilla
-    layout = pm.decompose(xyz)
-    # Transformación real a compleja
-    density = pm.create(type='real')
-    density.paint(xyz, layout=layout)
-    # Se obtiene un campo complejo (será la trasnformada de fourier)
-    def potential_transfer_function(k, v):
-        k2 = k.normp(zeromode=1)
-        return v / (k2)
 
-    pot_k = density.r2c(out=Ellipsis).apply(potential_transfer_function, out=Ellipsis)
-    # Se obtiene la velocidad en el espacio real (supongo)
-    for d in range(3):
-        def force_transfer_function(k, v, d=d):
-            return k[d] * 1j * v
-
-        force_d = pot_k.apply(force_transfer_function).c2r(out=Ellipsis)
-
-        w = force_d.readout(xyz, layout=layout)
-    npt.assert_allclose(w, bt.z)
 
 def test_radius_40(bt):
     xyz = bt._xyzcoordinates()
@@ -412,7 +384,7 @@ def test_grid3dgridlim(bt):
     npt.assert_almost_equal(liminf, i)
     npt.assert_almost_equal(limsup, s)
 
-
+#@pytest.mark.webtest
 def test_grid3dcells(bt):
     liminf = np.array([0, 0, 0])
     limsup = np.array([5, 5, 5])
@@ -424,7 +396,7 @@ def test_grid3dcells(bt):
     valingrid = bt._grid3dcells(liminf, limsup, centers, nbines)
     npt.assert_almost_equal(valingrid, array)
 
-
+#@pytest.mark.webtest
 def test_grid3d(bt):
     centers = np.array(
         [[1.1, 0.1, 2.4], [3.5, 4.6, 3.2], [2.1, 3.7, 1.1], [1, 2, 1]]
