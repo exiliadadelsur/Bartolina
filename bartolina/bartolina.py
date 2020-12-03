@@ -333,7 +333,7 @@ class ReZSpace(object):
 
         liminf, limsup = self._grid3d_gridlim(inf, sup)
 
-        valingrid = self._grid3dcells(liminf, limsup, centers, 1024)
+        valingrid = self._grid3dcells(liminf, limsup, centers, 24)
 
         return valingrid
 
@@ -442,7 +442,8 @@ class ReZSpace(object):
             effect. Array has the same lengh that the input array z.
 
         Example
-        --------
+        -------
+        >>> import bartolina as bt
         >>> rzs = bt.ReZSpace(ra, dec, z)
         >>> dckaisercorr, zkaisercorr = rzs.kaisercorr()
 
@@ -463,10 +464,10 @@ class ReZSpace(object):
         valingrid = self._grid3d(halos.xyzcenters, halos.labels_h_massive)
 
         # Calculate bias
-        bhm = self._bias(self.cosmo.H0, self.Mth, self.cosmo.Om0)
+        bhm = self._bias(self.cosmo.H0.value, self.Mth, self.cosmo.Om0)
 
         # Calculate overdensity field
-        delta = self._density(valingrid, halos.mass, 1024)
+        delta = self._density(valingrid, halos.mass, 24)
 
         f = self._calcf(self.cosmo.Om0, self.cosmo.Ode0)
 
@@ -506,6 +507,7 @@ class ReZSpace(object):
 
         Example
         -------
+        >>> import bartolina as bt
         >>> rzs = bt.ReZSpace(ra, dec, z)
         >>> dcfogcorr, zfogcorr = rzs.fogcorr(mags)
 
