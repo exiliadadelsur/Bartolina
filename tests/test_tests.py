@@ -97,6 +97,7 @@ def test_numhalo(bt):
     assert numhalo == 13
 
 
+@pytest.mark.haloprop
 def test_halo_properties_rad(bt):
     xyz = bt._xyzcoordinates()
     # finding group of galaxies
@@ -107,6 +108,7 @@ def test_halo_properties_rad(bt):
     assert np.sum(rad < 0) == 0
 
 
+@pytest.mark.haloprop
 def test_halo_properties_mass(bt):
     xyz = bt._xyzcoordinates()
     # finding group of galaxies
@@ -119,6 +121,7 @@ def test_halo_properties_mass(bt):
     assert np.sum(mass < 0) == 0
 
 
+@pytest.mark.haloprop
 def test_dark_matter_halos_radius(bt):
     halos, galingroups = bt._dark_matter_halos()
     # radius array dimension is 1
@@ -129,26 +132,18 @@ def test_dark_matter_halos_radius(bt):
     assert isinstance(halos.radius[0], float)
 
 
+@pytest.mark.haloprop
 def test_dark_matter_halos_hmassive(bt):
     halos, galingroups = bt._dark_matter_halos()
     # massive halos array length
     assert len(halos.labels_h_massive[0]) == 34487
 
 
+@pytest.mark.thisis
 def test_bias(bt):
     bias = bt._bias(100, 10 ** 12.5, 0.27)
     expected_bias = np.array([1.00714324])  # 8 decimals
     npt.assert_almost_equal(bias, expected_bias, 8)  # equal within 8 decimals
-
-
-# def test_grid3d(bt):
-
-#    bt.halos()
-#    bt.kaisercorr()
-#    unique_elements, counts_elements = np.unique(
-#        bt.valingrid, axis=0, return_counts=True
-#    )
-#    assert len(unique_elements) == len(counts_elements)
 
 
 def test_dc_fog_corr_len(table):
@@ -202,29 +197,6 @@ def test_fogcorr_zluminous(table):
     npt.assert_allclose(zfogcorr, z)
 
 
-# def test_realspace_lendc(table):
-#    table = table[table["ABSR"] > -20.6]
-#    table = table[table["ABSR"] < -20.4]
-#    rzs = bartolina.ReZSpace(table["RAJ2000"], table["DEJ2000"],
-#    table["zobs"])
-#    dc, zcorr = rzs.fogcorr(table["ABSR"], seedvalue=26)
-# length of the corrected comoving distance array
-#    assert len(dc) == len(rzs.z)
-
-
-# def test_realspace_lenzcorr(table):
-#    table = table[table["ABSR"] > -20.6]
-#    table = table[table["ABSR"] < -20.4]
-#    rzs = bartolina.ReZSpace(table["RAJ2000"], table["DEJ2000"],
-#    table["zobs"])
-#    halos, galingroups = rzs._dark_matter_halos()
-#    dc, zcorr = rzs.fogcorr(table["ABSR"], seedvalue=26)
-#    z = rzs._z_realspace(dc, halos, galingroups)
-# length of the corrected redshift array
-#    assert len(z) == len(rzs.z)
-
-
-@pytest.mark.webtest
 def test_density(bt):
     valingrid = np.array([[1, 2, 3], [4, 3, 1], [0, 3, 4]])
     hmass = np.array([12, 50, 15])
@@ -359,3 +331,70 @@ def test_density(bt):
         ]
     )
     npt.assert_almost_equal(delta, array)
+
+
+def test_f(bt):
+    f = bt._calcf(0.27, 0.73)
+    npt.assert_almost_equal(f, 0.4690904014151921, 10)
+
+
+def test_zkaisercorr(bt):
+    z = np.array([0.1, 0.12, 0.09])
+    v = np.array([1.58, 1.7, 1.63])
+    array = np.array([0.09999999, 0.11999999, 0.08999999])
+    zcorr = bt._zkaisercorr(z, v)
+    npt.assert_almost_equal(array, zcorr)
+
+
+@pytest.mark.webtest
+def test_grid3daxislim(bt):
+    halos, galingroups = bt._dark_matter_halos()
+    centers, labels = halos.xyzcenters, halos.labels_h_massive
+    inf, sup = bt._grid3d_axislim(centers, labels)
+    i = np.array([-564.0966701, -515.7190963, -32.9904224])
+    s = np.array([-13.50295, 479.20005, 522.83549])
+    npt.assert_almost_equal(inf, i, decimal=5)
+    npt.assert_almost_equal(sup, s, decimal=5)
+
+
+# @pytest.mark.webtest
+def test_grid3dgridlim(bt):
+    halos, galingroups = bt._dark_matter_halos()
+    centers, labels = halos.xyzcenters, halos.labels_h_massive
+    inf, sup = bt._grid3d_axislim(centers, labels)
+    liminf, limsup = bt._grid3d_gridlim(inf, sup)
+    i = np.array([-836.2593814, -565.7190963, -302.5370377])
+    s = np.array([258.659766, 529.2000511, 792.3821097])
+    npt.assert_almost_equal(liminf, i)
+    npt.assert_almost_equal(limsup, s)
+
+
+# @pytest.mark.webtest
+def test_grid3dcells(bt):
+    liminf = np.array([0, 0, 0])
+    limsup = np.array([5, 5, 5])
+    nbines = 6
+    centers = np.array(
+        [[1.1, 0.1, 2.4], [3.5, 4.6, 3.2], [2.1, 3.7, 1.1], [1, 2, 1]]
+    )
+    array = np.array([[[1, 0, 2]], [[4, 5, 3]], [[2, 4, 1]], [[1, 2, 1]]])
+    valingrid = bt._grid3dcells(liminf, limsup, centers, nbines)
+    npt.assert_almost_equal(valingrid, array)
+
+
+# @pytest.mark.webtest
+def test_grid3d(bt):
+    centers = np.array(
+        [[1.1, 0.1, 2.4], [3.5, 4.6, 3.2], [2.1, 3.7, 1.1], [1, 2, 1]]
+    )
+    labels = np.array([0, 1, 2, 3])
+    array = np.array(
+        [
+            [[500, 489, 514]],
+            [[524, 534, 522]],
+            [[510, 525, 502]],
+            [[499, 508, 501]],
+        ]
+    )
+    valingrid = bt._grid3d(centers, labels)
+    npt.assert_almost_equal(valingrid, array)
