@@ -49,6 +49,17 @@ class GalInGroup(object):
 
 
 # ============================================================================
+# CONSTANTS
+# ============================================================================
+
+N_GRID_CELLS = 1024
+N_MONTE_CARLO = 300000
+
+# ============================================================================
+# AUXILIARY CLASS
+# ============================================================================
+
+# ============================================================================
 # MAIN CLASS
 # ============================================================================
 
@@ -283,10 +294,10 @@ class ReZSpace(object):
             # Monte Carlo simulation for distance
             nfw = NFWProfile(self.cosmo, halos.z_centers[i], mdef=self.delta_c)
             radial_positions_pos = nfw.mc_generate_nfw_radial_positions(
-                num_pts=300000, halo_radius=halos.radius[i], seed=seedvalue
+                num_pts=N_MONTE_CARLO, halo_radius=halos.radius[i], seed=seedvalue
             )
             radial_positions_neg = nfw.mc_generate_nfw_radial_positions(
-                num_pts=300000, halo_radius=halos.radius[i], seed=seedvalue
+                num_pts=N_MONTE_CARLO, halo_radius=halos.radius[i], seed=seedvalue
             )
             radial_positions_neg = -1 * radial_positions_neg
             radial_positions = np.r_[
@@ -333,7 +344,7 @@ class ReZSpace(object):
 
         liminf, limsup = self._grid3d_gridlim(inf, sup)
 
-        valingrid = self._grid3dcells(liminf, limsup, centers, 24)
+        valingrid = self._grid3dcells(liminf, limsup, centers, N_GRID_CELLS)
 
         return valingrid
 
@@ -467,7 +478,7 @@ class ReZSpace(object):
         bhm = self._bias(self.cosmo.H0.value, self.Mth, self.cosmo.Om0)
 
         # Calculate overdensity field
-        delta = self._density(valingrid, halos.mass, 24)
+        delta = self._density(valingrid, halos.mass, N_GRID_CELLS)
 
         f = self._calcf(self.cosmo.Om0, self.cosmo.Ode0)
 
