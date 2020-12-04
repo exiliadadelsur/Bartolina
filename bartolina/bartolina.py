@@ -18,14 +18,31 @@ from camb import model
 
 from cluster_toolkit import bias
 
-from halotools.empirical_models import NFWProfile
-
 import numpy as np
 
 import pandas as pd
 
 from sklearn.cluster import DBSCAN
 from scipy import fftpack
+
+import warnings
+with warnings.catch_warnings(record=True) as w:
+    from halotools.empirical_models import NFWProfile
+    assert all(issubclass(wi.category, UserWarning) for wi in w)
+
+
+# ============================================================================
+# CONSTANTS
+# ============================================================================
+
+
+N_GRID_CELLS = 24
+N_MONTE_CARLO = 300000
+
+
+# ============================================================================
+# AUXILIARY CLASS
+# ============================================================================
 
 
 @attr.s(frozen=True)
@@ -47,17 +64,6 @@ class GalInGroup(object):
     groups = attr.ib()
     id_groups = attr.ib()
 
-
-# ============================================================================
-# CONSTANTS
-# ============================================================================
-
-N_GRID_CELLS = 1024
-N_MONTE_CARLO = 300000
-
-# ============================================================================
-# AUXILIARY CLASS
-# ============================================================================
 
 # ============================================================================
 # MAIN CLASS
