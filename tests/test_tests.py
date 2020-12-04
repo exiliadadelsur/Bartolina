@@ -49,6 +49,7 @@ def bt(table):
 # ============================================================================
 
 
+@pytest.mark.halo40
 def test_radius_40(bt):
     xyz = bt._xyzcoordinates()
     groups, id_groups = bt._groups(xyz)
