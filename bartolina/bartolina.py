@@ -36,7 +36,7 @@ with warnings.catch_warnings(record=True) as w:
 # ============================================================================
 
 
-N_GRID_CELLS = 24
+N_GRID_CELLS = 1024
 N_MONTE_CARLO = 300000
 
 
@@ -237,7 +237,7 @@ class ReZSpace(object):
         """Properties of halos."""
         # select only galaxies in groups
         galincluster = id_groups[id_groups > -1]
-        # arrays to store return results
+        # arrays to store results
         xyzcenters = np.empty([len(galincluster), 3])
         dc_center = np.empty([len(galincluster)])
         hmass = np.empty([len(galincluster)])
@@ -245,7 +245,7 @@ class ReZSpace(object):
         radius = np.empty([len(galincluster)])
         # run for each group of galaxies
         for i in galincluster:
-            mask = [groups == i]
+            mask = groups == i
             # halo radius
             radius[i] = self._radius(
                 self.ra[mask], self.dec[mask], self.z[mask]
@@ -310,7 +310,8 @@ class ReZSpace(object):
                 radial_positions_pos, radial_positions_neg
             ]
             # random choice of distance for each galaxy
-            dc = np.random.choice(radial_positions, size=numgal)
+            al = np.random.RandomState(seedvalue)
+            dc = al.choice(radial_positions, size=numgal)
             # combine Monte Carlo distance and distance to halo center
             dcfogcorr[sat_gal_mask] = halo_centers[i] + dc
         return dcfogcorr, halo_centers, halos.radius, galingroups.groups
