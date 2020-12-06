@@ -120,7 +120,7 @@ class ReZSpace(object):
     # Internal methods
     # ========================================================================
 
-    def _dark_matter_halos(self):
+    def dark_matter_halos(self):
         """Find properties of massive dark matter halos.
 
         Find massive dark matter halos and cartesian coordinates of his
@@ -130,12 +130,12 @@ class ReZSpace(object):
 
         """
         # cartesian coordinates for galaxies
-        xyz = self._xyzcoordinates()
+        xyz = self.xyzcoordinates()
         # finding group of galaxies
-        groups, id_groups = self._groups(xyz)
+        groups, id_groups = self.groups(xyz)
         # distance and redshifts to halo center
         # radius and mass of halo
-        xyz_c, dc_c, z_c, rad, mass = self._group_prop(id_groups, groups, xyz)
+        xyz_c, dc_c, z_c, rad, mass = self.group_prop(id_groups, groups, xyz)
         # selec massive halos
         labels_h_massive = np.where(mass > self.Mth)
         # store results of clustering
@@ -144,7 +144,7 @@ class ReZSpace(object):
         halos = Halo(xyz_c, dc_c, z_c, rad, mass, labels_h_massive)
         return halos, galingroups
 
-    def _xyzcoordinates(self):
+    def xyzcoordinates(self):
         """x, y, z cartesian coordinates to galaxies."""
         # comoving distance to galaxies
         dc = self.cosmo.comoving_distance(self.z)
@@ -158,7 +158,7 @@ class ReZSpace(object):
         xyz = np.array([c.cartesian.x, c.cartesian.y, c.cartesian.z]).T
         return xyz
 
-    def _groups(self, xyz):
+    def groups(self, xyz):
         """Clustering of galaxies."""
         # set weights for clustering
         weights = self.z * 100
@@ -171,7 +171,7 @@ class ReZSpace(object):
         )
         return clustering.labels_, unique_elements
 
-    def _radius(self, ra, dec, z):
+    def radius(self, ra, dec, z):
         """Radius of dark matter halos."""
         # number of galaxies
         galnum = len(ra)
@@ -192,7 +192,7 @@ class ReZSpace(object):
         radius = (galnum * (galnum - 1) / (sum_rij)) * (np.pi / 2)
         return radius
 
-    def _centers(self, xyz, z):
+    def centers(self, xyz, z):
         """Properties of centers of each halo."""
         # cartesian coordinates
         xcenter = np.mean(xyz[:, 0])
@@ -209,14 +209,14 @@ class ReZSpace(object):
         )
         return xcenter, ycenter, zcenter, dc_center_i, redshift_center
 
-    def _halomass(self, radius, z_center):
+    def halomass(self, radius, z_center):
         """Mass of halo."""
         # use a Navarro profile (Navarro et al. 1997) [1]
         model = NFWProfile(self.cosmo, z_center, mdef=self.delta_c)
         hmass = model.halo_radius_to_halo_mass(radius)
         return hmass
 
-    def _group_prop(self, id_groups, groups, xyz):
+    def group_prop(self, id_groups, groups, xyz):
         """Properties of halos."""
         # select only galaxies in groups
         galincluster = id_groups[id_groups > -1]
@@ -230,11 +230,11 @@ class ReZSpace(object):
         for i in galincluster:
             mask = [groups == i]
             # halo radius
-            radius[i] = self._radius(
+            radius[i] = self.radius(
                 self.ra[mask], self.dec[mask], self.z[mask]
             )
             # halo center
-            x, y, z, dc, z_cen = self._centers(xyz[mask], self.z[mask])
+            x, y, z, dc, z_cen = self.centers(xyz[mask], self.z[mask])
             xyzcenters[i, 0] = x
             xyzcenters[i, 1] = y
             xyzcenters[i, 2] = z
@@ -245,7 +245,7 @@ class ReZSpace(object):
             hmass[i] = model.halo_radius_to_halo_mass(radius[i])
         return xyzcenters, dc_center, z_center, radius, hmass
 
-    def _bias(self, h0, mth, omega_m):
+    def bias(self, h0, mth, omega_m):
         pars = camb.CAMBparams()
         pars.set_cosmology(h0, ombh2=0.022, omch2=0.122)
         pars.set_dark_energy(w=-1.0)
@@ -260,7 +260,7 @@ class ReZSpace(object):
         bhm = bias.bias_at_M(mth, kh, pk, omega_m)
         return bhm
 
-    def _dc_fog_corr(
+    def dc_fog_corr(
         self,
         abs_mag,
         halos,
@@ -298,7 +298,7 @@ class ReZSpace(object):
             dcfogcorr[sat_gal_mask] = halo_centers[i] + dc
         return dcfogcorr, halo_centers, halos.radius, galingroups.groups
 
-    def _z_fog_corr(
+    def z_fog_corr(
         self, dcfogcorr, abs_mag, halos, galingroups, mag_threshold=-20.5
     ):
         """Corrected redshift."""
@@ -327,17 +327,17 @@ class ReZSpace(object):
             zfogcorr[sat_gal_mask] = z_galaxies
         return zfogcorr
 
-    def _grid3d(self, centers, labels):
+    def grid3d(self, centers, labels):
 
-        inf, sup = self._grid3d_axislim(centers, labels)
+        inf, sup = self.grid3d_axislim(centers, labels)
 
-        liminf, limsup = self._grid3d_gridlim(inf, sup)
+        liminf, limsup = self.grid3d_gridlim(inf, sup)
 
-        valingrid = self._grid3dcells(liminf, limsup, centers, 24)
+        valingrid = self.grid3dcells(liminf, limsup, centers, 24)
 
         return valingrid
 
-    def _grid3d_axislim(self, centers, labels):
+    def grid3d_axislim(self, centers, labels):
         centers = centers[labels]
         # Define axis limits
         inf = np.array(
@@ -356,7 +356,7 @@ class ReZSpace(object):
         )
         return inf, sup
 
-    def _grid3d_gridlim(self, inf, sup):
+    def grid3d_gridlim(self, inf, sup):
         # Define axis ranges
         rangeaxis = sup - inf
         # Largest axis range
@@ -377,7 +377,7 @@ class ReZSpace(object):
                 )
         return liminf, limsup
 
-    def _grid3dcells(self, liminf, limsup, centers, nbines):
+    def grid3dcells(self, liminf, limsup, centers, nbines):
         # Define cells
         binesx = np.linspace(liminf[0], limsup[0], nbines + 1)
         binesy = np.linspace(liminf[1], limsup[1], nbines + 1)
@@ -396,7 +396,7 @@ class ReZSpace(object):
         ).T
         return valingrid
 
-    def _density(self, valingrid, mass, n):
+    def density(self, valingrid, mass, n):
 
         x = np.arange(0, n)
         cube = np.array(np.meshgrid(x, x, x)).T.reshape(-1, 3)
@@ -412,12 +412,12 @@ class ReZSpace(object):
         delta = np.where(indexcube == 0, rho_h, indexcube)
         return delta
 
-    def _calcf(self, omegam, omegalambda):
+    def calcf(self, omegam, omegalambda):
 
         f = omegam ** 0.6 + 1 / 70 * omegalambda * (1 + omegam)
         return f
 
-    def _zkaisercorr(self, zcenters, velocity):
+    def zkaisercorr(self, zcenters, velocity):
         zkaisercorr = (zcenters - velocity / const.c.value) / (
             1 + velocity / const.c.value
         )
@@ -457,24 +457,24 @@ class ReZSpace(object):
         redshift of each group.
 
         """
-        halos, galingroups = self._dark_matter_halos()
+        halos, galingroups = self.dark_matter_halos()
 
         # Construct the 3d grid and return the cells in which the centers
         # of the halos are found
-        valingrid = self._grid3d(halos.xyzcenters, halos.labels_h_massive)
+        valingrid = self.grid3d(halos.xyzcenters, halos.labels_h_massive)
 
         # Calculate bias
-        bhm = self._bias(self.cosmo.H0.value, self.Mth, self.cosmo.Om0)
+        bhm = self.bias(self.cosmo.H0.value, self.Mth, self.cosmo.Om0)
 
         # Calculate overdensity field
-        delta = self._density(valingrid, halos.mass, 24)
+        delta = self.density(valingrid, halos.mass, 24)
 
-        f = self._calcf(self.cosmo.Om0, self.cosmo.Ode0)
+        f = self.calcf(self.cosmo.Om0, self.cosmo.Ode0)
 
         ################################################################
         v = fftpack.ifft(self.cosmo.H0 * 1 * f * fftpack.fft(delta) / bhm)
 
-        zkaisercorr = self._zkaisercorr(halos.z_centers, v)
+        zkaisercorr = self.zkaisercorr(halos.z_centers, v)
 
         dckaisercorr = self.cosmo.comoving_distance(zkaisercorr)
 
@@ -521,8 +521,8 @@ class ReZSpace(object):
 
         """
         # halo properties
-        halos, galingroups = self._dark_matter_halos()
-        dcfogcorr, dc_centers, radius, groups = self._dc_fog_corr(
+        halos, galingroups = self.dark_matter_halos()
+        dcfogcorr, dc_centers, radius, groups = self.dc_fog_corr(
             abs_mag,
             halos,
             galingroups,
@@ -530,7 +530,7 @@ class ReZSpace(object):
             mag_threshold,
             seedvalue,
         )
-        zfogcorr = self._z_fog_corr(
+        zfogcorr = self.z_fog_corr(
             dcfogcorr, abs_mag, halos, galingroups, mag_threshold
         )
         dcfogcorr[dcfogcorr == 0] = self.cosmo.comoving_distance(
@@ -579,14 +579,14 @@ class ReZSpace(object):
         # array to store return results
         dc = np.zeros(len(self.z))
         # properties of halos
-        halos, galingroups = self._dark_matter_halos()
+        halos, galingroups = self.dark_matter_halos()
         # Kaiser correction with kaisercorr method
         dckaisercorr, zkaisercorr = self.kaisercorr()
         # FoG correction with fogcorr method
-        dccorr, dc_centers, radius, groups = self._dc_fog_corr(
+        dccorr, dc_centers, radius, groups = self.dc_fog_corr(
             abs_mag, halos, galingroups, dckaisercorr, mag_threshold, seedvalue
         )
-        zcorr = self._z_fog_corr(
+        zcorr = self.z_fog_corr(
             dccorr, abs_mag, halos, galingroups, mag_threshold
         )
         dccorr[dccorr == 0] = self.cosmo.comoving_distance(self.z[dccorr == 0])
@@ -594,3 +594,5 @@ class ReZSpace(object):
         # corrected redshift of each galaxy
         # run for each massive halo
         return dc, zcorr
+
+        
