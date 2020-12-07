@@ -246,6 +246,24 @@ class ReZSpace(object):
         return xyzcenters, dc_center, z_center, radius, hmass
 
     def bias(self, h0, mth, omega_m):
+        """
+        Calculate halo bias function.
+
+        Returns
+        -------
+        bhm : int
+            Halo bias value from the entered cosmology and threshold mass.
+
+        Example
+        -------
+        >>> import bartolina as bt
+        >>> bhm = bt.bias(100, 10^12, 0.27)
+
+        Notes
+        -----
+        To perform the calculation we have implemented cluster_toolkit. 
+
+        """
         pars = camb.CAMBparams()
         pars.set_cosmology(h0, ombh2=0.022, omch2=0.122)
         pars.set_dark_energy(w=-1.0)
@@ -328,7 +346,31 @@ class ReZSpace(object):
         return zfogcorr
 
     def grid3d(self, centers, labels):
+        """Create a cube box  whose linear size is chosen to be about 100 h^-1 
+        Mpc larger than then maximal scale of the survey volume among 
+        the three axes. Divide the box into 1024^3 grid cells and identify 
+        the cells in which the halos are found.
 
+        Returns
+        -------
+        valingrid : array_like
+            Numerical coordinates of the cells where the halos are found. 
+            Array has the same length that the input array centers.
+
+        Example
+        -------
+        >>> import bartolina as bt
+        >>> rzs = bt.ReZSpace(ra, dec, z)
+        >>> halos, galingroups = rzs.dark_matter_halos()
+        >>> valingrid = rzs.grid3d(halos.xyzcenters, halos.labels_h_massive)
+
+        Notes
+        -----
+        We have been based on the grids described in the works of Wang et al. 
+        2012 and Shi et al. 2016. This method calls 3 small methods that 
+        perform each step separately.
+
+        """
         inf, sup = self.grid3d_axislim(centers, labels)
 
         liminf, limsup = self.grid3d_gridlim(inf, sup)
@@ -338,6 +380,17 @@ class ReZSpace(object):
         return valingrid
 
     def grid3d_axislim(self, centers, labels):
+        """Determines the minimum and maximum xyz coordinates in which the 
+        halos lie.
+
+        Returns
+        -------
+        inf : array_like
+            Minimum values of xyz. Array has 1 row and 3 columns.
+        sup : array_like
+            Maximum values of xyz. Array has 1 row and 3 columns.
+
+        """
         centers = centers[labels]
         # Define axis limits
         inf = np.array(
@@ -357,13 +410,24 @@ class ReZSpace(object):
         return inf, sup
 
     def grid3d_gridlim(self, inf, sup):
-        # Define axis ranges
+        """Determine the limits of the grid, which are chosen to be about 
+        100 h^-1 Mpc larger than then maximal scale of the survey volume among 
+        the three axes.
+
+        Returns
+        -------
+        liminf : array_like
+            Lower limits on xyz axes. Array has 1 row and 3 columns.
+        limsup : array_like
+            Upper limits on xyz axes. Array has 1 row and 3 columns.
+
+        """
         rangeaxis = sup - inf
-        # Largest axis range
+        
         maxaxis = np.argmax(rangeaxis)
         liminf = np.zeros((3))
         limsup = np.zeros((3))
-        # Define the grid axis. It's 100 h-1 Mpc larger than the major axis
+
         for i in range(3):
             if i == maxaxis:
                 liminf[i] = inf[i] - 50
@@ -378,6 +442,17 @@ class ReZSpace(object):
         return liminf, limsup
 
     def grid3dcells(self, liminf, limsup, centers, nbines):
+        """Divide the box into 1024^3 grid cells and identify the cells in 
+        which the centers of halos are located.
+
+        Returns
+        -------
+        valingrid : array_like
+            Numerical coordinates of the cells where the halos are found. 
+            Array has the same length that the input array centers.
+
+        """        
+        
         # Define cells
         binesx = np.linspace(liminf[0], limsup[0], nbines + 1)
         binesy = np.linspace(liminf[1], limsup[1], nbines + 1)
@@ -397,7 +472,23 @@ class ReZSpace(object):
         return valingrid
 
     def density(self, valingrid, mass, n):
+        """Calculate the mass density in each cell.
 
+        Returns
+        -------
+        delta : array_like
+            Mass density in each cell. Array has the same length as the 
+            number of cells in the grid. In this case it is 1024 ^ 3.
+
+        Example
+        -------
+        >>> import bartolina as bt
+        >>> rzs = bt.ReZSpace(ra, dec, z)
+        >>> halos, galingroups = rzs.dark_matter_halos()
+        >>> valingrid = rzs.grid3d(halos.xyzcenters, halos.labels_h_massive)
+        >>> delta = rzs.density(valingrid, halos.mass, 1024)
+
+        """
         x = np.arange(0, n)
         cube = np.array(np.meshgrid(x, x, x)).T.reshape(-1, 3)
         indexcube = np.zeros(n ** 3)
@@ -413,7 +504,29 @@ class ReZSpace(object):
         return delta
 
     def calcf(self, omegam, omegalambda):
+        """Computes the approximation to the function f (\ omega).
 
+        Returns
+        -------
+        f : int
+            Value of f from the entered cosmology.
+
+        Example
+        -------
+        >>> import bartolina as bt
+        >>> rzs = bt.ReZSpace(ra, dec, z)
+        >>> f = rzs.calcf(cosmo.Om0, cosmo.Ode0)
+        
+        or
+
+        >>> import bartolina as bt
+        >>> f = bt.calcf(0.27, 0.73)
+
+        Notes
+        -----
+        The approach is based on Lahav et al. 1991.
+
+        """
         f = omegam ** 0.6 + 1 / 70 * omegalambda * (1 + omegam)
         return f
 
@@ -467,7 +580,7 @@ class ReZSpace(object):
         bhm = self.bias(self.cosmo.H0.value, self.Mth, self.cosmo.Om0)
 
         # Calculate overdensity field
-        delta = self.density(valingrid, halos.mass, 24)
+        delta = self.density(valingrid, halos.mass, 1024)
 
         f = self.calcf(self.cosmo.Om0, self.cosmo.Ode0)
 
