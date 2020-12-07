@@ -261,7 +261,7 @@ class ReZSpace(object):
 
         Notes
         -----
-        To perform the calculation we have implemented cluster_toolkit. 
+        To perform the calculation we have implemented cluster_toolkit.
 
         """
         pars = camb.CAMBparams()
@@ -346,15 +346,15 @@ class ReZSpace(object):
         return zfogcorr
 
     def grid3d(self, centers, labels):
-        """Create a cube box  whose linear size is chosen to be about 100 h^-1 
-        Mpc larger than then maximal scale of the survey volume among 
-        the three axes. Divide the box into 1024^3 grid cells and identify 
+        """Create a cube box  whose linear size is chosen to be about 100 h^-1
+        Mpc larger than then maximal scale of the survey volume among
+        the three axes. Divide the box into 1024^3 grid cells and identify
         the cells in which the halos are found.
 
         Returns
         -------
         valingrid : array_like
-            Numerical coordinates of the cells where the halos are found. 
+            Numerical coordinates of the cells where the halos are found.
             Array has the same length that the input array centers.
 
         Example
@@ -366,8 +366,8 @@ class ReZSpace(object):
 
         Notes
         -----
-        We have been based on the grids described in the works of Wang et al. 
-        2012 and Shi et al. 2016. This method calls 3 small methods that 
+        We have been based on the grids described in the works of Wang et al.
+        2012 and Shi et al. 2016. This method calls 3 small methods that
         perform each step separately.
 
         """
@@ -380,7 +380,7 @@ class ReZSpace(object):
         return valingrid
 
     def grid3d_axislim(self, centers, labels):
-        """Determines the minimum and maximum xyz coordinates in which the 
+        """Determines the minimum and maximum xyz coordinates in which the
         halos lie.
 
         Returns
@@ -410,8 +410,8 @@ class ReZSpace(object):
         return inf, sup
 
     def grid3d_gridlim(self, inf, sup):
-        """Determine the limits of the grid, which are chosen to be about 
-        100 h^-1 Mpc larger than then maximal scale of the survey volume among 
+        """Determine the limits of the grid, which are chosen to be about
+        100 h^-1 Mpc larger than then maximal scale of the survey volume among
         the three axes.
 
         Returns
@@ -423,7 +423,7 @@ class ReZSpace(object):
 
         """
         rangeaxis = sup - inf
-        
+
         maxaxis = np.argmax(rangeaxis)
         liminf = np.zeros((3))
         limsup = np.zeros((3))
@@ -442,17 +442,17 @@ class ReZSpace(object):
         return liminf, limsup
 
     def grid3dcells(self, liminf, limsup, centers, nbines):
-        """Divide the box into 1024^3 grid cells and identify the cells in 
+        """Divide the box into 1024^3 grid cells and identify the cells in
         which the centers of halos are located.
 
         Returns
         -------
         valingrid : array_like
-            Numerical coordinates of the cells where the halos are found. 
+            Numerical coordinates of the cells where the halos are found.
             Array has the same length that the input array centers.
 
-        """        
-        
+        """
+
         # Define cells
         binesx = np.linspace(liminf[0], limsup[0], nbines + 1)
         binesy = np.linspace(liminf[1], limsup[1], nbines + 1)
@@ -477,7 +477,7 @@ class ReZSpace(object):
         Returns
         -------
         delta : array_like
-            Mass density in each cell. Array has the same length as the 
+            Mass density in each cell. Array has the same length as the
             number of cells in the grid. In this case it is 1024 ^ 3.
 
         Example
@@ -516,7 +516,7 @@ class ReZSpace(object):
         >>> import bartolina as bt
         >>> rzs = bt.ReZSpace(ra, dec, z)
         >>> f = rzs.calcf(cosmo.Om0, cosmo.Ode0)
-        
+
         or
 
         >>> import bartolina as bt
@@ -707,5 +707,3 @@ class ReZSpace(object):
         # corrected redshift of each galaxy
         # run for each massive halo
         return dc, zcorr
-
-        
