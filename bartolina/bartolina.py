@@ -489,9 +489,19 @@ class ReZSpace(object):
 
         f = self._calcf(self.cosmo.Om0, self.cosmo.Ode0)
 
-        ################################################################
-        v = fftpack.ifft(self.cosmo.H0 * 1 * f * fftpack.fft(delta) / bhm)
+        inf, sup = self._grid3d_axislim(halos.xyzcenters, halos.labels_h_massive)
+        liminf, limsup = self._grid3d_gridlim(inf, sup)
+        kx0 = fftpack.fftfreq(N_GRID_CELLS, d=(limsup[0]-liminf[0])/N_GRID_CELLS)
+        ky0 = fftpack.fftfreq(N_GRID_CELLS, d=(limsup[1]-liminf[1])/N_GRID_CELLS)
+        kz0 = fftpack.fftfreq(N_GRID_CELLS, d=(limsup[2]-liminf[2])/N_GRID_CELLS)
+        kx, ky, kz = np.meshgrid(kx0, ky0, kz0)
+        k2 = kx**2 + ky**2 + kz**2
+        vx = fftpack.ifft(self.cosmo.H0 * 1 * f * (1j*kx/k2) * fftpack.fft(delta) / bhm)
+        vy = fftpack.ifft(self.cosmo.H0 * 1 * f * (1j*ky/k2) * fftpack.fft(delta) / bhm)
+        vz = fftpack.ifft(self.cosmo.H0 * 1 * f * (1j*kz/k2) * fftpack.fft(delta) / bhm)        
 
+        v= np.sqrt(vx**2 + vy**2 + vz**2)
+        
         zkaisercorr = self._zkaisercorr(halos.z_centers, v)
 
         dckaisercorr = self.cosmo.comoving_distance(zkaisercorr)

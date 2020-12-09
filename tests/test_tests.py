@@ -381,7 +381,6 @@ def test_grid3dcells(bt):
     npt.assert_almost_equal(valingrid, array)
 
 
-@pytest.mark.thisis
 def test_grid3d(bt):
     centers = np.array(
         [[1.1, 0.1, 2.4], [3.5, 4.6, 3.2], [2.1, 3.7, 1.1], [1, 2, 1]]
@@ -397,3 +396,4 @@ def test_grid3d(bt):
     )
     valingrid = bt._grid3d(centers, labels)
     npt.assert_almost_equal(valingrid, array)
+    
