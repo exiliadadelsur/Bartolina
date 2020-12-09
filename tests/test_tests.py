@@ -87,7 +87,7 @@ def test_zcenter(bt):
     assert redshift_center < z.max()
     assert redshift_center > z.min()
 
-
+@pytest.mark.halo40
 def test_numhalo(bt):
     xyz = bt._xyzcoordinates()
     groups, id_groups = bt._groups(xyz)
@@ -97,7 +97,6 @@ def test_numhalo(bt):
     assert numhalo == 13
 
 
-@pytest.mark.haloprop
 def test_halo_properties_rad(bt):
     xyz = bt._xyzcoordinates()
     # finding group of galaxies
@@ -139,7 +138,7 @@ def test_dark_matter_halos_hmassive(bt):
     assert len(halos.labels_h_massive[0]) == 34487
 
 
-@pytest.mark.thisis
+
 def test_bias(bt):
     bias = bt._bias(100, 10 ** 12.5, 0.27)
     expected_bias = np.array([1.00714324])  # 8 decimals
@@ -382,7 +381,6 @@ def test_grid3dcells(bt):
     npt.assert_almost_equal(valingrid, array)
 
 
-# @pytest.mark.webtest
 def test_grid3d(bt):
     centers = np.array(
         [[1.1, 0.1, 2.4], [3.5, 4.6, 3.2], [2.1, 3.7, 1.1], [1, 2, 1]]
@@ -398,3 +396,4 @@ def test_grid3d(bt):
     )
     valingrid = bt._grid3d(centers, labels)
     npt.assert_almost_equal(valingrid, array)
+    

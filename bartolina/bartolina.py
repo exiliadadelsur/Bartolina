@@ -18,14 +18,31 @@ from camb import model
 
 from cluster_toolkit import bias
 
-from halotools.empirical_models import NFWProfile
-
 import numpy as np
 
 import pandas as pd
 
 from sklearn.cluster import DBSCAN
 from scipy import fftpack
+
+import warnings
+with warnings.catch_warnings(record=True) as w:
+    from halotools.empirical_models import NFWProfile
+    assert all(issubclass(wi.category, UserWarning) for wi in w)
+
+
+# ============================================================================
+# CONSTANTS
+# ============================================================================
+
+
+N_GRID_CELLS = 1024
+N_MONTE_CARLO = 300000
+
+
+# ============================================================================
+# AUXILIARY CLASS
+# ============================================================================
 
 
 @attr.s(frozen=True)
@@ -220,7 +237,7 @@ class ReZSpace(object):
         """Properties of halos."""
         # select only galaxies in groups
         galincluster = id_groups[id_groups > -1]
-        # arrays to store return results
+        # arrays to store results
         xyzcenters = np.empty([len(galincluster), 3])
         dc_center = np.empty([len(galincluster)])
         hmass = np.empty([len(galincluster)])
@@ -228,7 +245,7 @@ class ReZSpace(object):
         radius = np.empty([len(galincluster)])
         # run for each group of galaxies
         for i in galincluster:
-            mask = [groups == i]
+            mask = groups == i
             # halo radius
             radius[i] = self._radius(
                 self.ra[mask], self.dec[mask], self.z[mask]
@@ -283,17 +300,18 @@ class ReZSpace(object):
             # Monte Carlo simulation for distance
             nfw = NFWProfile(self.cosmo, halos.z_centers[i], mdef=self.delta_c)
             radial_positions_pos = nfw.mc_generate_nfw_radial_positions(
-                num_pts=300000, halo_radius=halos.radius[i], seed=seedvalue
+                num_pts=N_MONTE_CARLO, halo_radius=halos.radius[i], seed=seedvalue
             )
             radial_positions_neg = nfw.mc_generate_nfw_radial_positions(
-                num_pts=300000, halo_radius=halos.radius[i], seed=seedvalue
+                num_pts=N_MONTE_CARLO, halo_radius=halos.radius[i], seed=seedvalue
             )
             radial_positions_neg = -1 * radial_positions_neg
             radial_positions = np.r_[
                 radial_positions_pos, radial_positions_neg
             ]
             # random choice of distance for each galaxy
-            dc = np.random.choice(radial_positions, size=numgal)
+            al = np.random.RandomState(seedvalue)
+            dc = al.choice(radial_positions, size=numgal)
             # combine Monte Carlo distance and distance to halo center
             dcfogcorr[sat_gal_mask] = halo_centers[i] + dc
         return dcfogcorr, halo_centers, halos.radius, galingroups.groups
@@ -333,7 +351,7 @@ class ReZSpace(object):
 
         liminf, limsup = self._grid3d_gridlim(inf, sup)
 
-        valingrid = self._grid3dcells(liminf, limsup, centers, 24)
+        valingrid = self._grid3dcells(liminf, limsup, centers, N_GRID_CELLS)
 
         return valingrid
 
@@ -467,13 +485,23 @@ class ReZSpace(object):
         bhm = self._bias(self.cosmo.H0.value, self.Mth, self.cosmo.Om0)
 
         # Calculate overdensity field
-        delta = self._density(valingrid, halos.mass, 24)
+        delta = self._density(valingrid, halos.mass, N_GRID_CELLS)
 
         f = self._calcf(self.cosmo.Om0, self.cosmo.Ode0)
 
-        ################################################################
-        v = fftpack.ifft(self.cosmo.H0 * 1 * f * fftpack.fft(delta) / bhm)
+        inf, sup = self._grid3d_axislim(halos.xyzcenters, halos.labels_h_massive)
+        liminf, limsup = self._grid3d_gridlim(inf, sup)
+        kx0 = fftpack.fftfreq(N_GRID_CELLS, d=(limsup[0]-liminf[0])/N_GRID_CELLS)
+        ky0 = fftpack.fftfreq(N_GRID_CELLS, d=(limsup[1]-liminf[1])/N_GRID_CELLS)
+        kz0 = fftpack.fftfreq(N_GRID_CELLS, d=(limsup[2]-liminf[2])/N_GRID_CELLS)
+        kx, ky, kz = np.meshgrid(kx0, ky0, kz0)
+        k2 = kx**2 + ky**2 + kz**2
+        vx = fftpack.ifft(self.cosmo.H0 * 1 * f * (1j*kx/k2) * fftpack.fft(delta) / bhm)
+        vy = fftpack.ifft(self.cosmo.H0 * 1 * f * (1j*ky/k2) * fftpack.fft(delta) / bhm)
+        vz = fftpack.ifft(self.cosmo.H0 * 1 * f * (1j*kz/k2) * fftpack.fft(delta) / bhm)        
 
+        v= np.sqrt(vx**2 + vy**2 + vz**2)
+        
         zkaisercorr = self._zkaisercorr(halos.z_centers, v)
 
         dckaisercorr = self.cosmo.comoving_distance(zkaisercorr)
