@@ -47,7 +47,22 @@ N_MONTE_CARLO = 300000
 
 @attr.s(frozen=True)
 class Halo(object):
-    """Store properties of dark matter halos."""
+    """Store properties of dark matter halos.
+
+    Atributes
+    ---------
+    xyzcenters : ndarray
+        Cartesian coordinates in Mpc to center of each halo.
+    dc_centers : array_like
+        Comoving distance to center of each halo.
+    radius : array_like
+        Radius of each halo in Mpc.
+    mass : array_like
+        Mass of each halo in solar mass.
+    label_h_massive : array_like
+          Label of halos with mass greater than the threshold mass.
+              
+    """
 
     xyzcenters = attr.ib()
     dc_centers = attr.ib()
@@ -59,7 +74,17 @@ class Halo(object):
 
 @attr.s(frozen=True)
 class GalInGroup(object):
-    """Store clustering results."""
+    """Store clustering results.
+
+    Atributes
+    ---------
+    groups : array_like
+        Cluster labels for each galaxy. Noisy samples are given the label -1.
+        Is the same return than labels_ of sklearn.cluster.DBSCAN.
+    id_group : array_like
+        List of ids used in groups attribute.
+    
+    """
 
     groups = attr.ib()
     id_groups = attr.ib()
@@ -96,6 +121,38 @@ class ReZSpace(object):
 
     Methods
     -------
+    dark_matter_halos
+        Creates Halo and GalInGroup objects.
+    xyzcoordinates
+        Obtains cartesian coordinates of halos centers.    
+    groups
+        Finds groups of galaxies.
+    radius
+        Obtains radius of dark matter halos
+    centers
+        Finds halos centers.
+    group_prop
+        Obtaines properties of halos.
+    bias
+        DESCRIPCIÓN
+    dc_fog_corr
+        Corrects comoving distance only considering FoG effect.
+    z_fog_corr
+        Corrects redshift only considering FoG effect.
+    grid3d
+        DESCRIPCIÓN
+    grid3d_axislim
+        DESCRIPCIÓN    
+    grid3d_gridlim
+        DESCRIPCIÓN    
+    grid3dcells
+        DESCRIPCIÓN    
+    density
+        DESCRIPCIÓN    
+    calcf
+        DESCRIPCIÓN    
+    zkaisercorr
+        Corrects redshift only considering Kaiser effect.            
     kaisercorr
         Corrects the Kaiser effect only.
     fogcorr
@@ -150,10 +207,11 @@ class ReZSpace(object):
 
         Returns
         -------
-        halos :
-            DESCRIPCION
+        halos : object
+            This class store properties of dark matter halos i.e. mass, 
+            radius, centers.
         galingroups :
-            DESCRIPCION
+            This class store clustering results.
 
         Example
         -------
@@ -187,7 +245,7 @@ class ReZSpace(object):
 
         Returns
         -------
-        xyz : array_like
+        xyz : ndarray
             Array containing Cartesian galaxies coordinates. Array has 3
             columns and the same length as the number of galaxies.
 
@@ -214,15 +272,15 @@ class ReZSpace(object):
     def groups(self, xyz):
         """Galaxies clustering.
 
-        Convert galaxies coordinates to Cartesian coordinates xyz.
+        Finds groups of galaxies.
 
         Returns
         -------
-
         clustering.labels_ : array_like
-            DESCRIPCION
+            Cluster labels for each galaxy. Noisy samples are given the label -1.
+            Is the same return than labels_ of sklearn.cluster.DBSCAN.
         unique_elements : array_like
-            DESCRIPCION
+            List of ids used in clustering.labels_.
 
         Example
         -------
@@ -253,22 +311,21 @@ class ReZSpace(object):
     def radius(self, ra, dec, z):
         """Dark matter halos radius.
 
-        Calculate the radii of the halos.
+        Calculate the radius of the halos.
 
         Returns
         -------
-
         radius : array_like
-            DESCRIPCION
-
+            Radius of each halo in Mpc.
 
         Example
         -------
-
-
-        Notes
-        -----
-
+        >>> import bartolina as bt
+        >>> rzs = bt.ReZSpace(ra, dec, z)
+        >>> xyz = rzs.xyzcoordinates()
+        >>> groups, id_groups = rzs.groups(xyz)
+        >>> mask = groups == 1
+        >>> radius = rzs.radius(rzs.ra[mask], rzs.dec[mask], rzs.z[mask])
 
         """
 
@@ -299,25 +356,25 @@ class ReZSpace(object):
 
         Returns
         -------
-
         xcenter : array_like
-            DESCRIPCION
+            Cartesian coordinate in the x axis, in Mpc.
         ycenter : array_like
-            DESCRIPCION
+            Cartesian coordinate in the y axis, in Mpc.
         zcenter : array_like
-            DESCRIPCION
+            Cartesian coordinate in the z axis, in Mpc.
         dc_center_i : array_like
-            DESCRIPCION
+            Comoving distance to center of each halo.
         redshift_center : array_like
-            DESCRIPCION
+            Redshift to center of each halo.
 
         Example
         -------
-
-
-        Notes
-        -----
-
+        >>> import bartolina as bt
+        >>> rzs = bt.ReZSpace(ra, dec, z)
+        >>> xyz = rzs.xyzcoordinates()
+        >>> groups, id_groups = rzs.groups(xyz)
+        >>> mask = groups == 1
+        >>> x, y, z_value, dc, z_cen = rzs.centers(xyz[mask], rzs.z[mask])
 
         """
 
@@ -352,16 +409,16 @@ class ReZSpace(object):
         Returns
         -------
 
-        xyzcenters : array_like
-            DESCRIPCION
+        xyzcenters : ndarray
+            Cartesian coordinates in Mpc to center of each halo.
         dc_center : array_like
-            DESCRIPCION
+            Comoving distance to center of each halo.
         z_center : array_like
-            DESCRIPCION
+            Cartesian coordinate in the z axis, in Mpc.
         radius : array_like
-            DESCRIPCION
+            Radius of each halo in Mpc.
         hmass : array_like
-            DESCRIPCION
+            Mass of each halo in solar mass.
 
         Example
         -------
@@ -453,21 +510,25 @@ class ReZSpace(object):
         Returns
         -------
         dcfogcorr : array_like
-            DESCRIPCION
+            Comoving distance only considering FoG effect.
         halo_centers : array_like
-            DESCRIPCION
+            Comoving distance to center of each halo.
         halos.radius : array_like
-            DESCRIPCION
+            Radius of each halo in Mpc.
         galingroups.groups : array_like
-            DESCRIPCION
+            Cluster labels for each galaxy. Noisy samples are given 
+            the label -1. Is the same return than labels_ of 
+            sklearn.cluster.DBSCAN.
 
         Example
         -------
-
-
-        Notes
-        -----
-
+        >>> dcfogcorr, dc_centers, radius, groups = self.dc_fog_corr(
+            abs_mag,
+            halos,
+            galingroups,
+            halos.dc_centers,
+            mag_threshold,
+            seedvalue)
 
         """
         # array to store return results
