@@ -882,7 +882,7 @@ class ReZSpace(object):
         vy = fftpack.ifft(self.cosmo.H0 * 1 * f * (1j*ky/k2) * fftpack.fft(delta) / bhm)
         vz = fftpack.ifft(self.cosmo.H0 * 1 * f * (1j*kz/k2) * fftpack.fft(delta) / bhm)        
 
-        v= np.sqrt(vx**2 + vy**2 + vz**2)
+        v = np.sqrt(vx**2 + vy**2 + vz**2)
         
         zkaisercorr = self.zkaisercorr(
             halos.z_centers, v, halos.mass, delta, N_GRID_CELLS
