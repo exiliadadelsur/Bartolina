@@ -507,10 +507,15 @@ class ReZSpace(object):
     ):
         """Corrected comoving distance.
 
+        Parameters
+        ----------
+        abs_mag : array_like
+            Absolute magnitudes of galaxies.
+
         Returns
         -------
         dcfogcorr : array_like
-            Comoving distance only considering FoG effect.
+            Comoving distance corrected only considering FoG effect.
         halo_centers : array_like
             Comoving distance to center of each halo.
         halos.radius : array_like
@@ -522,13 +527,16 @@ class ReZSpace(object):
 
         Example
         -------
+        >>> import bartolina as bt
+        >>> rzs = bt.ReZSpace(ra, dec, z)
+        >>> halos, galingroups = rzs.dark_matter_halos()        
         >>> dcfogcorr, dc_centers, radius, groups = self.dc_fog_corr(
-            abs_mag,
-            halos,
-            galingroups,
-            halos.dc_centers,
-            mag_threshold,
-            seedvalue)
+        ... abs_mag,
+        ... halos,
+        ... galingroups,
+        ... halos.dc_centers,
+        ... mag_threshold=10 ** 12.5,
+        ... seedvalue=None)
 
         """
         # array to store return results
@@ -568,7 +576,7 @@ class ReZSpace(object):
         Returns
         -------
         zfogcorr: array_like
-            DESCRIPCION
+            Comoving distance corrected only considering FoG effect.
 
         Example
         -------
