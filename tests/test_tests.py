@@ -339,9 +339,11 @@ def test_f(bt):
 
 def test_zkaisercorr(bt):
     z = np.array([0.1, 0.12, 0.09])
-    v = np.array([1.58, 1.7, 1.63])
+    v = np.array([1.58, 1.2, 1.7, 1.1, 1.63, 1.8, 1.9])
+    delta = np.array([5, 0.616, 3, 0.616, 2, 0.616, 0.616])
+    mass = np.array([12, 50, 15])
     array = np.array([0.09999999, 0.11999999, 0.08999999])
-    zcorr = bt.zkaisercorr(z, v)
+    zcorr = bt.zkaisercorr(z, v, mass, delta, 5)
     npt.assert_almost_equal(array, zcorr)
 
 

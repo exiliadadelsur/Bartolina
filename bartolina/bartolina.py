@@ -799,9 +799,27 @@ class ReZSpace(object):
         f = omegam ** 0.6 + 1 / 70 * omegalambda * (1 + omegam)
         return f
 
-    def zkaisercorr(self, zcenters, velocity):
-        zkaisercorr = (zcenters - velocity / const.c.value) / (
-            1 + velocity / const.c.value
+    def zkaisercorr(self, zcenters, velocity, mass, delta, n):
+        """Corrected redshift.
+
+        Returns
+        -------
+        zkaisercorr : array_like
+
+        Example
+        -------
+        >>> import bartolina as bt
+        >>> rzs = bt.ReZSpace(ra, dec, z)
+        >>> dc, zcorr = rzs.realspace(absr, seedvalue=26)
+
+        Notes
+        -------
+        Redshift corrected via equation 10 (Shi et al. 2016)
+        """
+
+        rho = np.sum(mass) / (n ** 3)
+        zkaisercorr = (zcenters - velocity[delta != rho] / const.c.value) / (
+            1 + velocity[delta != rho] / const.c.value
         )
         return zkaisercorr
 
@@ -866,7 +884,9 @@ class ReZSpace(object):
 
         v= np.sqrt(vx**2 + vy**2 + vz**2)
         
-        zkaisercorr = self.zkaisercorr(halos.z_centers, v)
+        zkaisercorr = self.zkaisercorr(
+            halos.z_centers, v, halos.mass, delta, N_GRID_CELLS
+        )
 
         dckaisercorr = self.cosmo.comoving_distance(zkaisercorr)
 
