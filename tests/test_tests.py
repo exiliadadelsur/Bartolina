@@ -61,22 +61,6 @@ def test_radius_40(bt):
     npt.assert_almost_equal(radius, 1.2232560617479369, 5)
 
 
-def test_hmass_40(bt):
-    xyz = bt.xyzcoordinates()
-    groups, id_groups = bt.groups(xyz)
-    radius = bt.radius(
-        bt.ra[groups == 2903],
-        bt.dec[groups == 2903],
-        bt.z[groups == 2903],
-    )
-    xyz = xyz[groups == 2903]
-    z = bt.z[groups == 2903]
-    xcen, ycen, zcen, dc_center_i, redshift_center = bt.centers(xyz, z)
-    hmass = bt.halomass(radius, redshift_center)
-    # halo with 40 members must have a virial radius less than 3 Mpc
-    npt.assert_approx_equal(hmass / 10 ** 14, 1, significant=0.1)
-
-
 def test_zcenter(bt):
     xyz = bt.xyzcoordinates()
     groups, id_groups = bt.groups(xyz)
@@ -86,6 +70,7 @@ def test_zcenter(bt):
     # center halos must have redshift between halo's redshifts limits
     assert redshift_center < z.max()
     assert redshift_center > z.min()
+
 
 @pytest.mark.halo40
 def test_numhalo(bt):
@@ -138,43 +123,45 @@ def test_dark_matter_halos_hmassive(bt):
     assert len(halos.labels_h_massive[0]) == 34487
 
 
-
 def test_bias(bt):
     bias = bt.bias(100, 10 ** 12.5, 0.27)
     expected_bias = np.array([1.00714324])  # 8 decimals
     npt.assert_almost_equal(bias, expected_bias, 8)  # equal within 8 decimals
 
 
+@pytest.mark.thisis
 def test_dc_fog_corr_len(table):
     table = table[table["ABSR"] > -20.6]
     table = table[table["ABSR"] < -20.4]
     rzs = bartolina.ReZSpace(table["RAJ2000"], table["DEJ2000"], table["zobs"])
-    halos, galingroups = rzs._dark_matter_halos()
-    dcfogcorr, dc_centers, radius, groups = rzs._dc_fog_corr(
+    halos, galingroups = rzs.dark_matter_halos()
+    dcfogcorr, dc_centers, radius, groups = rzs.dc_fog_corr(
         table["ABSR"], halos, galingroups, halos.dc_centers, seedvalue=26
     )
-    # length of _dc_fog_corr return
+    # length of dc_fog_corr return
     assert len(dcfogcorr) == len(rzs.z)
 
 
+@pytest.mark.thisis
 def test_z_fog_corr_len(table):
     table = table[table["ABSR"] > -20.6]
     table = table[table["ABSR"] < -20.4]
     rzs = bartolina.ReZSpace(table["RAJ2000"], table["DEJ2000"], table["zobs"])
-    halos, galingroups = rzs._dark_matter_halos()
-    dcfogcorr, dc_centers, radius, groups = rzs._dc_fog_corr(
+    halos, galingroups = rzs.dark_matter_halos()
+    dcfogcorr, dc_centers, radius, groups = rzs.dc_fog_corr(
         table["ABSR"], halos, galingroups, halos.dc_centers, seedvalue=26
     )
-    zfogcorr = rzs._z_fog_corr(
+    zfogcorr = rzs.z_fog_corr(
         dcfogcorr,
         table["ABSR"],
         halos,
         galingroups,
     )
-    # length of _z_fog_corr return
+    # length of z_fog_corr return
     assert len(zfogcorr) == len(rzs.z)
 
 
+@pytest.mark.thisis
 def test_fogcorr(table):
     table = table[table["ABSR"] > -20.6]
     table = table[table["ABSR"] < -20.4]
@@ -185,6 +172,7 @@ def test_fogcorr(table):
     assert zfogcorr.max() <= rzs.z.max()
 
 
+@pytest.mark.thisis
 def test_fogcorr_zluminous(table):
     table = table[table["ABSR"] > -20.6]
     table = table[table["ABSR"] < -20.4]
@@ -337,13 +325,12 @@ def test_f(bt):
     npt.assert_almost_equal(f, 0.4690904014151921, 10)
 
 
+@pytest.mark.thisis1
 def test_zkaisercorr(bt):
     z = np.array([0.1, 0.12, 0.09])
-    v = np.array([1.58, 1.2, 1.7, 1.1, 1.63, 1.8, 1.9])
-    delta = np.array([5, 0.616, 3, 0.616, 2, 0.616, 0.616])
-    mass = np.array([12, 50, 15])
+    v = np.array([1.58, 1.2, 1.7])
     array = np.array([0.09999999, 0.11999999, 0.08999999])
-    zcorr = bt.zkaisercorr(z, v, mass, delta, 5)
+    zcorr = bt.zkaisercorr(z, v)
     npt.assert_almost_equal(array, zcorr)
 
 
@@ -398,4 +385,22 @@ def test_grid3d(bt):
     )
     valingrid = bt.grid3d(centers, labels)
     npt.assert_almost_equal(valingrid, array)
-    
+
+
+@pytest.mark.thisis
+def test_kaisercorr(table):
+    table = table[table["ABSR"] > -20.6]
+    table = table[table["ABSR"] < -20.4]
+    rzs = bartolina.ReZSpace(table["RAJ2000"], table["DEJ2000"], table["zobs"])
+    halos, galingroups = rzs.dark_matter_halos()
+    dc, zcorr = rzs.kaisercorr()
+    assert len(dc) == len(halos.dc_centers)
+
+
+@pytest.mark.thisis
+def test_realspace(table):
+    table = table[table["ABSR"] > -20.6]
+    table = table[table["ABSR"] < -20.4]
+    rzs = bartolina.ReZSpace(table["RAJ2000"], table["DEJ2000"], table["zobs"])
+    dc, zcorr = rzs.realspace(table["ABSR"])
+    assert len(zcorr) == len(rzs.z)

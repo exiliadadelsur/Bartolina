@@ -8,7 +8,6 @@
 
 from astropy import constants as const
 from astropy import units as u
-from astropy.coordinates import SkyCoord
 from astropy.cosmology import LambdaCDM, z_at_value
 
 import attr
@@ -26,8 +25,11 @@ from sklearn.cluster import DBSCAN
 from scipy import fftpack
 
 import warnings
+
 with warnings.catch_warnings(record=True) as w:
     from halotools.empirical_models import NFWProfile
+    from astropy.coordinates import SkyCoord
+
     assert all(issubclass(wi.category, UserWarning) for wi in w)
 
 
@@ -61,7 +63,7 @@ class Halo(object):
         Mass of each halo in solar mass.
     label_h_massive : array_like
           Label of halos with mass greater than the threshold mass.
-              
+
     """
 
     xyzcenters = attr.ib()
@@ -83,7 +85,7 @@ class GalInGroup(object):
         Is the same return than labels_ of sklearn.cluster.DBSCAN.
     id_group : array_like
         List of ids used in groups attribute.
-    
+
     """
 
     groups = attr.ib()
@@ -124,7 +126,7 @@ class ReZSpace(object):
     dark_matter_halos
         Creates Halo and GalInGroup objects.
     xyzcoordinates
-        Obtains cartesian coordinates of halos centers.    
+        Obtains cartesian coordinates of halos centers.
     groups
         Finds groups of galaxies.
     radius
@@ -134,25 +136,25 @@ class ReZSpace(object):
     group_prop
         Obtaines properties of halos.
     bias
-        DESCRIPCIÓN
+        Calculate halo bias function.
     dc_fog_corr
         Corrects comoving distance only considering FoG effect.
     z_fog_corr
         Corrects redshift only considering FoG effect.
     grid3d
-        DESCRIPCIÓN
+        Create a three dimensional grid.
     grid3d_axislim
-        DESCRIPCIÓN    
+        Determine the minimum and maximum xyz coordinates.
     grid3d_gridlim
-        DESCRIPCIÓN    
+        Determine the limits of the grid.
     grid3dcells
-        DESCRIPCIÓN    
+        Division of the box in cells.
     density
-        DESCRIPCIÓN    
+        Calculate the mass density in each cell.
     calcf
-        DESCRIPCIÓN    
+        Compute the approximation to the function f (omega).
     zkaisercorr
-        Corrects redshift only considering Kaiser effect.            
+        Corrects redshift only considering Kaiser effect.
     kaisercorr
         Corrects the Kaiser effect only.
     fogcorr
@@ -187,14 +189,16 @@ class ReZSpace(object):
     dec = attr.ib()
     z = attr.ib()
     cosmo = attr.ib()
+
     @cosmo.default
     def _cosmo_default(self):
-        return LambdaCDM(H0=100, Om0=0.27, Ode0=0.73)                    
+        return LambdaCDM(H0=100, Om0=0.27, Ode0=0.73)
+
     Mth = attr.ib(default=(10 ** 12.5))
     delta_c = attr.ib(default="200m")
 
     # ========================================================================
-    # Internal methods
+    # Public methods
     # ========================================================================
 
     def dark_matter_halos(self):
@@ -208,7 +212,7 @@ class ReZSpace(object):
         Returns
         -------
         halos : object
-            This class store properties of dark matter halos i.e. mass, 
+            This class store properties of dark matter halos i.e. mass,
             radius, centers.
         galingroups :
             This class store clustering results.
@@ -256,7 +260,6 @@ class ReZSpace(object):
         >>> xyz = rzs.xyzcoordinates()
 
         """
-
         # comoving distance to galaxies
         dc = self.cosmo.comoving_distance(self.z)
         # set Ra and Dec in degrees. Comoving distance in Mpc
@@ -274,11 +277,17 @@ class ReZSpace(object):
 
         Finds groups of galaxies.
 
+        Parameters
+        ----------
+        xyz : ndarray
+            Cartesian coordinates of galaxies.
+
         Returns
         -------
         clustering.labels_ : array_like
-            Cluster labels for each galaxy. Noisy samples are given the label -1.
-            Is the same return than labels_ of sklearn.cluster.DBSCAN.
+            Cluster labels for each galaxy. Noisy samples are given the
+            label -1. Is the same return than labels_ of
+            sklearn.cluster.DBSCAN.
         unique_elements : array_like
             List of ids used in clustering.labels_.
 
@@ -296,7 +305,6 @@ class ReZSpace(object):
         scikit-learn project, Buitinck et al., 2013.)
 
         """
-
         # set weights for clustering
         weights = self.z * 100
         # clustering of galaxies
@@ -313,6 +321,15 @@ class ReZSpace(object):
 
         Calculate the radius of the halos.
 
+        Parameters
+        ----------
+        ra : array_like
+            Right ascension of halos centers.
+        dec : array_like
+            Declination of halos centers.
+        z : array_like
+            Redshift of halos centers.
+
         Returns
         -------
         radius : array_like
@@ -328,7 +345,6 @@ class ReZSpace(object):
         >>> radius = rzs.radius(rzs.ra[mask], rzs.dec[mask], rzs.z[mask])
 
         """
-
         # number of galaxies
         galnum = len(ra)
         # comoving distance to galaxies
@@ -354,6 +370,13 @@ class ReZSpace(object):
         Calculate Cartesian coordinates of halo centers, the halos comoving
         distances and the z-values of halo centers.
 
+        Parameters
+        ----------
+        xyz : array_like
+            Cartesian coordinates of galaxies.
+        z : array_like
+            Redshift of galaxies.
+
         Returns
         -------
         xcenter : array_like
@@ -377,7 +400,6 @@ class ReZSpace(object):
         >>> x, y, z_value, dc, z_cen = rzs.centers(xyz[mask], rzs.z[mask])
 
         """
-
         # cartesian coordinates
         xcenter = np.mean(xyz[:, 0])
         ycenter = np.mean(xyz[:, 1])
@@ -393,22 +415,25 @@ class ReZSpace(object):
         )
         return xcenter, ycenter, zcenter, dc_center_i, redshift_center
 
-    #    def halomass(self, radius, z_center):
-    #        """Mass of halo."""
-    #        # use a Navarro profile (Navarro et al. 1997) [1]
-    #        model = NFWProfile(self.cosmo, z_center, mdef=self.delta_c)
-    #        hmass = model.halo_radius_to_halo_mass(radius)
-    #        return hmass
-
     def group_prop(self, id_groups, groups, xyz):
         """Determine halos properties.
 
         Calculate Cartesian coordinates of halo centers, the halos comoving
         distances, the z-values of halo centers, halos radii and halos masses.
 
+        Parameters
+        ----------
+        id_group : array_like
+            List of ids for groups of galaxies.
+        groups : array_like
+            Cluster labels for each galaxy. Noisy samples are given the
+            label -1. Is the same return than labels_ of
+            sklearn.cluster.DBSCAN.
+        xyz : ndarray
+            Cartesian coordinates of the centers of the groups.
+
         Returns
         -------
-
         xyzcenters : ndarray
             Cartesian coordinates in Mpc to center of each halo.
         dc_center : array_like
@@ -435,7 +460,6 @@ class ReZSpace(object):
         separately (radius and centers).
 
         """
-
         # select only galaxies in groups
         galincluster = id_groups[id_groups > -1]
         # arrays to store results
@@ -466,6 +490,15 @@ class ReZSpace(object):
 
     def bias(self, h0, mth, omega_m):
         """Calculate halo bias function.
+
+        Parameters
+        ----------
+        h0 : float
+            Cosmological constant of Hubble.
+        mth : float
+            The threshold mass that determines massive halos in solar mass.
+        omega_m : float
+            Cosmological constant omega matter.
 
         Returns
         -------
@@ -511,6 +544,20 @@ class ReZSpace(object):
         ----------
         abs_mag : array_like
             Absolute magnitudes of galaxies.
+        halos : object
+            Store properties of dark matter halos.
+        galingroups : array_like
+            Cluster labels for each galaxy. Noisy samples are given the
+            label -1. Is the same return than labels_ of
+            sklearn.cluster.DBSCAN.
+        halo_centers : array_like
+            Comoving distance to center of halos.
+        mag_threshold : float, optional
+            The threshold absolute magnitude that determines luminous center
+            galaxies of each group. Default is -20.5.
+        seedvalue : int, optional
+            Random number seed used in the Monte Carlo realization.
+            Default is None, which will produce stochastic results.
 
         Returns
         -------
@@ -521,22 +568,22 @@ class ReZSpace(object):
         halos.radius : array_like
             Radius of each halo in Mpc.
         galingroups.groups : array_like
-            Cluster labels for each galaxy. Noisy samples are given 
-            the label -1. Is the same return than labels_ of 
+            Cluster labels for each galaxy. Noisy samples are given
+            the label -1. Is the same return than labels_ of
             sklearn.cluster.DBSCAN.
 
         Example
         -------
         >>> import bartolina as bt
         >>> rzs = bt.ReZSpace(ra, dec, z)
-        >>> halos, galingroups = rzs.dark_matter_halos()        
+        >>> halos, galingroups = rzs.dark_matter_halos()
         >>> dcfogcorr, dc_centers, radius, groups = self.dc_fog_corr(
-        ... abs_mag,
-        ... halos,
-        ... galingroups,
-        ... halos.dc_centers,
-        ... mag_threshold=10 ** 12.5,
-        ... seedvalue=None)
+        ...     abs_mag,
+        ...     halos,
+        ...     galingroups,
+        ...     halos.dc_centers,
+        ...     mag_threshold=10 ** 12.5,
+        ...     seedvalue=None)
 
         """
         # array to store return results
@@ -552,10 +599,14 @@ class ReZSpace(object):
             # Monte Carlo simulation for distance
             nfw = NFWProfile(self.cosmo, halos.z_centers[i], mdef=self.delta_c)
             radial_positions_pos = nfw.mc_generate_nfw_radial_positions(
-                num_pts=N_MONTE_CARLO, halo_radius=halos.radius[i], seed=seedvalue
+                num_pts=N_MONTE_CARLO,
+                halo_radius=halos.radius[i],
+                seed=seedvalue,
             )
             radial_positions_neg = nfw.mc_generate_nfw_radial_positions(
-                num_pts=N_MONTE_CARLO, halo_radius=halos.radius[i], seed=seedvalue
+                num_pts=N_MONTE_CARLO,
+                halo_radius=halos.radius[i],
+                seed=seedvalue,
             )
             radial_positions_neg = -1 * radial_positions_neg
             radial_positions = np.r_[
@@ -573,18 +624,41 @@ class ReZSpace(object):
     ):
         """Corrected redshift.
 
+        Parameters
+        ----------
+        dcfogcorr : array_like
+            Corrected comoving distance to each massive halo.
+        abs_mag : array_like
+            Absolute magnitudes of galaxies.
+        halos : object
+            Store properties of dark matter halos.
+        galingroups : array_like
+            Cluster labels for each galaxy. Noisy samples are given the
+            label -1. Is the same return than labels_ of
+            sklearn.cluster.DBSCAN.
+        mag_threshold : float, optional
+            The threshold absolute magnitude that determines luminous center
+            galaxies of each group. Default is -20.5.
+
         Returns
         -------
         zfogcorr: array_like
-            Comoving distance corrected only considering FoG effect.
+            Redshift corrected only considering FoG effect.
 
         Example
         -------
-
-
-        Notes
-        -----
-
+        >>> import bartolina as bt
+        >>> rzs = bt.ReZSpace(ra, dec, z)
+        >>> halos, galingroups = rzs.dark_matter_halos()
+        >>> dcfogcorr, dc_centers, radius, groups = rsz.dc_fog_corr(
+        ...     abs_mag,
+        ...     halos,
+        ...     galingroups,
+        ...     halos.dc_centers,
+        ...     mag_threshold=10 ** 12.5,
+        ...     seedvalue=None)
+        >>> zfogcorr = rsz.z_fog_corr(
+        ...     dcfogcorr, abs_mag, halos, galingroups, mag_threshold=-20.5)
 
         """
         # array to store return results
@@ -613,10 +687,21 @@ class ReZSpace(object):
         return zfogcorr
 
     def grid3d(self, centers, labels):
-        """Create a cube box  whose linear size is chosen to be about 100 h^-1
+        """Create a three dimensional grid.
+
+        Create a cube box  whose linear size is chosen to be about 100 h^-1
         Mpc larger than then maximal scale of the survey volume among
         the three axes. Divide the box into 1024^3 grid cells and identify
         the cells in which the halos are found.
+
+        Parameters
+        ----------
+        centers : ndarray
+            Cartesian coordinates xyz of centers of each group.
+        labels : ndarray
+            Cluster labels for each galaxy. Noisy samples are given the
+            label -1. Is the same return than labels_ of
+            sklearn.cluster.DBSCAN.
 
         Returns
         -------
@@ -649,15 +734,24 @@ class ReZSpace(object):
         return valingrid
 
     def grid3d_axislim(self, centers, labels):
-        """Determines the minimum and maximum xyz coordinates in which the
-        halos lie.
+        """Determine the minimum and maximum xyz coordinates.
+
+        Parameters
+        ----------
+        centers : ndarray
+            Cartesian coordinates xyz of centers of each group.
+        labels : ndarray
+            Cluster labels for each galaxy. Noisy samples are given the
+            label -1. Is the same return than labels_ of
+            sklearn.cluster.DBSCAN.
 
         Returns
         -------
-        inf : array_like
-            Minimum values of xyz. Array has 1 row and 3 columns.
         sup : array_like
             Maximum values of xyz. Array has 1 row and 3 columns.
+        inf : array_like
+            Minimum values of xyz. Array has 1 row and 3 columns.
+
 
         """
         centers = centers[labels]
@@ -679,9 +773,17 @@ class ReZSpace(object):
         return inf, sup
 
     def grid3d_gridlim(self, inf, sup):
-        """Determine the limits of the grid, which are chosen to be about
-        100 h^-1 Mpc larger than then maximal scale of the survey volume among
-        the three axes.
+        """Determine the limits of the grid.
+
+        These limits are chosen to be about 100 h^-1 Mpc larger than then
+        maximal scale of the survey volume among the three axes.
+
+        Parameters
+        ----------
+        inf : array_like
+            Minimum values of xyz. Array has 1 row and 3 columns.
+        sup : array_like
+            Maximum values of xyz. Array has 1 row and 3 columns.
 
         Returns
         -------
@@ -711,8 +813,21 @@ class ReZSpace(object):
         return liminf, limsup
 
     def grid3dcells(self, liminf, limsup, centers, nbines):
-        """Divide the box into 1024^3 grid cells and identify the cells in
+        """Division of the box in cells.
+
+        Divide the box into 1024^3 grid cells and identify the cells in
         which the centers of halos are located.
+
+        Parameters
+        ----------
+        liminf : array_like
+            Lower limits on xyz axes. Array has 1 row and 3 columns.
+        limsup : array_like
+            Upper limits on xyz axes. Array has 1 row and 3 columns.
+        centers : ndarray
+            Cartesian coordinates xyz of centers of each group.
+        nbines : int
+            Number of division for each grid axis.
 
         Returns
         -------
@@ -721,7 +836,6 @@ class ReZSpace(object):
             Array has the same length that the input array centers.
 
         """
-
         # Define cells
         binesx = np.linspace(liminf[0], limsup[0], nbines + 1)
         binesy = np.linspace(liminf[1], limsup[1], nbines + 1)
@@ -742,6 +856,16 @@ class ReZSpace(object):
 
     def density(self, valingrid, mass, n):
         """Calculate the mass density in each cell.
+
+        Parameters
+        ----------
+        valingrid : array_like
+            Numerical coordinates of the cells where the halos are found.
+            Array has the same length that the input array centers.
+        mass : array_like
+            Mass of each halo.
+        n : int
+            Number of division for each grid axis.
 
         Returns
         -------
@@ -773,7 +897,14 @@ class ReZSpace(object):
         return delta
 
     def calcf(self, omegam, omegalambda):
-        """Computes the approximation to the function f (\ omega).
+        """Compute the approximation to the function f (omega).
+
+        Parameters
+        ----------
+        omegam : float
+            Cosmological constant omega matter.
+        omegalambda: float
+            Cosmological constant omega lambda.
 
         Returns
         -------
@@ -799,8 +930,15 @@ class ReZSpace(object):
         f = omegam ** 0.6 + 1 / 70 * omegalambda * (1 + omegam)
         return f
 
-    def zkaisercorr(self, zcenters, velocity, mass, delta, n):
+    def zkaisercorr(self, zcenters, velocity):
         """Corrected redshift.
+
+        Parameters
+        ----------
+        zcenters : array_like
+            Redshifts of the centers to each massive halo.
+        velocity : array_like
+            Velocity V_cen for the position of each massive halo.
 
         Returns
         -------
@@ -815,17 +953,12 @@ class ReZSpace(object):
         Notes
         -------
         Redshift corrected via equation 10 (Shi et al. 2016)
-        """
 
-        rho = np.sum(mass) / (n ** 3)
-        zkaisercorr = (zcenters - velocity[delta != rho] / const.c.value) / (
-            1 + velocity[delta != rho] / const.c.value
+        """
+        zkaisercorr = (zcenters - velocity / const.c.value) / (
+            1 + velocity / const.c.value
         )
         return zkaisercorr
-
-    # ========================================================================
-    # Public methods
-    # ========================================================================
 
     # Reconstructed FoG space; based on correcting for Kaiser effect only
     def kaisercorr(self):
@@ -859,6 +992,9 @@ class ReZSpace(object):
         """
         halos, galingroups = self.dark_matter_halos()
 
+        # array to store return results
+        zkaisercorr = np.zeros(len(halos.z_centers))
+
         # Construct the 3d grid and return the cells in which the centers
         # of the halos are found
         valingrid = self.grid3d(halos.xyzcenters, halos.labels_h_massive)
@@ -871,21 +1007,50 @@ class ReZSpace(object):
 
         f = self.calcf(self.cosmo.Om0, self.cosmo.Ode0)
 
-        inf, sup = self._grid3d_axislim(halos.xyzcenters, halos.labels_h_massive)
-        liminf, limsup = self._grid3d_gridlim(inf, sup)
-        kx0 = fftpack.fftfreq(N_GRID_CELLS, d=(limsup[0]-liminf[0])/N_GRID_CELLS)
-        ky0 = fftpack.fftfreq(N_GRID_CELLS, d=(limsup[1]-liminf[1])/N_GRID_CELLS)
-        kz0 = fftpack.fftfreq(N_GRID_CELLS, d=(limsup[2]-liminf[2])/N_GRID_CELLS)
+        inf, sup = self.grid3d_axislim(
+            halos.xyzcenters, halos.labels_h_massive
+        )
+        liminf, limsup = self.grid3d_gridlim(inf, sup)
+        kx0 = fftpack.fftfreq(
+            N_GRID_CELLS, d=(limsup[0] - liminf[0]) / N_GRID_CELLS
+        )
+        ky0 = fftpack.fftfreq(
+            N_GRID_CELLS, d=(limsup[1] - liminf[1]) / N_GRID_CELLS
+        )
+        kz0 = fftpack.fftfreq(
+            N_GRID_CELLS, d=(limsup[2] - liminf[2]) / N_GRID_CELLS
+        )
         kx, ky, kz = np.meshgrid(kx0, ky0, kz0)
-        k2 = kx**2 + ky**2 + kz**2
-        vx = fftpack.ifft(self.cosmo.H0 * 1 * f * (1j*kx/k2) * fftpack.fft(delta) / bhm)
-        vy = fftpack.ifft(self.cosmo.H0 * 1 * f * (1j*ky/k2) * fftpack.fft(delta) / bhm)
-        vz = fftpack.ifft(self.cosmo.H0 * 1 * f * (1j*kz/k2) * fftpack.fft(delta) / bhm)        
+        k2 = kx ** 2 + ky ** 2 + kz ** 2
+        kx = kx.reshape(
+            N_GRID_CELLS ** 3,
+        )
+        ky = ky.reshape(
+            N_GRID_CELLS ** 3,
+        )
+        kz = kz.reshape(
+            N_GRID_CELLS ** 3,
+        )
+        delta = delta.reshape(
+            N_GRID_CELLS ** 3,
+        )
+        k2 = k2.reshape(
+            N_GRID_CELLS ** 3,
+        )
+        vx = fftpack.ifft(
+            self.cosmo.H0 * 1 * f * (1j * kx / k2) * fftpack.fft(delta) / bhm
+        )
+        vy = fftpack.ifft(
+            self.cosmo.H0 * 1 * f * (1j * ky / k2) * fftpack.fft(delta) / bhm
+        )
+        vz = fftpack.ifft(
+            self.cosmo.H0 * 1 * f * (1j * kz / k2) * fftpack.fft(delta) / bhm
+        )
 
-        v = np.sqrt(vx**2 + vy**2 + vz**2)
-        
-        zkaisercorr = self.zkaisercorr(
-            halos.z_centers, v, halos.mass, delta, N_GRID_CELLS
+        v = np.sqrt(vx ** 2 + vy ** 2 + vz ** 2)
+
+        zkaisercorr[halos.labels_h_massive] = self.zkaisercorr(
+            halos.z_centers[halos.labels_h_massive], v[halos.labels_h_massive]
         )
 
         dckaisercorr = self.cosmo.comoving_distance(zkaisercorr)
@@ -904,7 +1069,7 @@ class ReZSpace(object):
             The threshold absolute magnitude that determines luminous center
             galaxies of each group. Default is -20.5.
         seedvalue : int, optional
-            Random number seed used in the Monte Carlo realization.ismo error.
+            Random number seed used in the Monte Carlo realization.
             Default is None, which will produce stochastic results.
 
         Returns
@@ -976,6 +1141,12 @@ class ReZSpace(object):
         zcorr : array_like
             Redshift of galaxies after apply corrections for Kaiser and FoG
             effects. Array has the same lengh that the input array z.
+
+        Example
+        -------
+        >>> import bartolina as bt
+        >>> rzs = bt.ReZSpace(ra, dec, z)
+        >>> dccorr, zcorr = rzs.realspace(mags)
 
         Notes
         -----
