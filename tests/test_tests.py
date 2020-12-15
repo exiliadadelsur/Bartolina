@@ -325,7 +325,7 @@ def test_f(bt):
     npt.assert_almost_equal(f, 0.4690904014151921, 10)
 
 
-@pytest.mark.thisis1
+@pytest.mark.thisis
 def test_zkaisercorr(bt):
     z = np.array([0.1, 0.12, 0.09])
     v = np.array([1.58, 1.2, 1.7])
