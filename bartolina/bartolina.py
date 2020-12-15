@@ -28,10 +28,12 @@ import warnings
 
 with warnings.catch_warnings(record=True) as w:
     from halotools.empirical_models import NFWProfile
-    from astropy.coordinates import SkyCoord
 
     assert all(issubclass(wi.category, UserWarning) for wi in w)
 
+with warnings.catch_warnings(record=True):
+    warnings.simplefilter("ignore")
+    from astropy.coordinates import SkyCoord
 
 # ============================================================================
 # CONSTANTS
