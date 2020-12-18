@@ -8,6 +8,22 @@ Bartolina has the principal class:
 * **ReZspace**: Sets parameters such as the cosmology to use and allows a set of methods. 
 
 Bartolina has the following methods:
+* **dark_matter_halos**: Creates Halo and GalInGroup objects.
+* **xyzcoordinates**: Obtains cartesian coordinates of halos centers.
+* **groups**: Finds groups of galaxies.
+* **radius**: Obtains radius of dark matter halos
+* **centers**: Finds halos centers.
+* **group_prop**: Obtaines properties of halos.
+* **bias**: Calculate halo bias function.
+* **dc_fog_corr**: Corrects comoving distance only considering FoG effect.
+* **z_fog_corr**: Corrects redshift only considering FoG effect.
+* **grid3d**: Create a three dimensional grid.
+* **grid3d_axislim**: Determine the minimum and maximum xyz coordinates.
+* **grid3d_gridlim**: Determine the limits of the grid.
+* **grid3dcells**: Division of the box in cells.
+* **density**: Calculate the mass density in each cell.
+* **calcf**: Compute the approximation to the function f (omega).
+* **zkaisercorr**: Corrects redshift only considering Kaiser effect.
 * **kaisercorr**: Corrects the Kaiser effect only.
 * **fogcorr**: Corrects the Finger of God effect only.
 * **realspace**: Corrects both effects (Kaiser and FoG).
