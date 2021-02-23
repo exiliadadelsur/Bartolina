@@ -6,6 +6,8 @@
 
 """Bartolina : real space reconstruction algorithm for redshift."""
 
+import warnings
+
 from astropy import constants as const
 from astropy import units as u
 from astropy.cosmology import LambdaCDM, z_at_value
@@ -21,10 +23,9 @@ import numpy as np
 
 import pandas as pd
 
-from sklearn.cluster import DBSCAN
 from scipy import fftpack
 
-import warnings
+from sklearn.cluster import DBSCAN
 
 with warnings.catch_warnings(record=True) as w:
     from halotools.empirical_models import NFWProfile
