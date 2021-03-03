@@ -238,13 +238,17 @@ class ReZSpace(object):
         groups, id_groups = self._groups(xyz)
         # distance and redshifts to halo center
         # radius and mass of halo
-        xyz_center, dc_center, z_center, rad, mass = self._group_prop(id_groups, groups, xyz)
+        xyz_center, dc_center, z_center, rad, mass = self._group_prop(
+            id_groups, groups, xyz
+        )
         # selec massive halos
         labels_h_massive = np.where(mass > self.Mth)
         # store results of clustering
         galinhalo = GalInHalo(groups, id_groups)
         # store properties of halos
-        halos = Halo(xyz_center, dc_center, z_center, rad, mass, labels_h_massive)
+        halos = Halo(
+            xyz_center, dc_center, z_center, rad, mass, labels_h_massive
+        )
         return halos, galinhalo
 
     def xyzcoordinates(self):
@@ -403,17 +407,13 @@ class ReZSpace(object):
         mag_threshold=-20.5,
         seedvalue=None,
     ):
-        """Corrected comoving distance.
-
-        """
+        """Corrected comoving distance."""
         # array to store return results
         dcfogcorr = np.zeros(len(self.z))
         # run for each massive halo
         for i in halos.labels_h_massive[0]:
             # select only galaxies with magnitudes over than -20.5
-            sat_gal_mask = (galinhalo.groups == i) * (
-                abs_mag > mag_threshold
-            )
+            sat_gal_mask = (galinhalo.groups == i) * (abs_mag > mag_threshold)
             # number of galaxies for corrections
             numgal = np.sum(sat_gal_mask)
             # Monte Carlo simulation for distance
@@ -442,17 +442,13 @@ class ReZSpace(object):
     def _z_fog_corr(
         self, dcfogcorr, abs_mag, halos, galinhalo, mag_threshold=-20.5
     ):
-        """Corrected redshift.
-
-        """
+        """Corrected redshift."""
         # array to store return results
         zfogcorr = np.zeros(len(self.z))
         # run for each massive halo
         for i in halos.labels_h_massive[0]:
             # select only galaxies with magnitudes over than -20.5
-            sat_gal_mask = (galinhalo.groups == i) * (
-                abs_mag > mag_threshold
-            )
+            sat_gal_mask = (galinhalo.groups == i) * (abs_mag > mag_threshold)
             # number of galaxies for corrections
             numgal = np.sum(sat_gal_mask)
             z_galaxies = np.zeros(numgal)
@@ -509,13 +505,12 @@ class ReZSpace(object):
         redshift of each group.
 
         """
-
         # Calculate bias
         bhm = self._bias(self.cosmo.H0.value, self.Mth, self.cosmo.Om0)
 
         f = self._calcf(self.cosmo.Om0, self.cosmo.Ode0)
 
-        return #dckaisercorr, zkaisercorr
+        return  # dckaisercorr, zkaisercorr
 
     # Reconstructed Kaiser space; based on correcting for FoG effect only
     def fogcorr(self, abs_mag, mag_threshold=-20.5, seedvalue=None):
