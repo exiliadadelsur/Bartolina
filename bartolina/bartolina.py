@@ -8,7 +8,7 @@
 
 import warnings
 
-from astropy import constants as const
+# from astropy import constants as const
 from astropy import units as u
 from astropy.cosmology import LambdaCDM, z_at_value
 
@@ -21,9 +21,9 @@ from cluster_toolkit import bias
 
 import numpy as np
 
-import pandas as pd
+# import pandas as pd
 
-from scipy import fftpack
+# from scipy import fftpack
 
 from sklearn.cluster import DBSCAN
 
@@ -510,7 +510,7 @@ class ReZSpace(object):
 
         f = self._calcf(self.cosmo.Om0, self.cosmo.Ode0)
 
-        return  # dckaisercorr, zkaisercorr
+        return bhm, f
 
     # Reconstructed Kaiser space; based on correcting for FoG effect only
     def fogcorr(self, abs_mag, mag_threshold=-20.5, seedvalue=None):
