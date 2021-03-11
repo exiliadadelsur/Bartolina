@@ -38,7 +38,7 @@ jobs:
         run: |
           sudo apt-get install mpi mpich
           sudo apt-get install cython
-          sudo apt-get install numpy
+          sudo apt-get install python-numpy
           sudo apt-get install mpi4py
       - name: Install tox
         run: pip install tox tox-gh-actions
