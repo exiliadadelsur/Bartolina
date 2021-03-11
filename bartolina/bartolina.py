@@ -22,9 +22,9 @@ from halotools.empirical_models import NFWProfile
 
 import numpy as np
 
-from sklearn.cluster import DBSCAN
-
 import pmesh
+
+from sklearn.cluster import DBSCAN
 
 
 # ============================================================================
@@ -461,7 +461,8 @@ class ReZSpace(object):
         # suavizado
         # smoothing = 1.0 * pm.Nmesh / pm.BoxSize
 
-        # lets get the correct mass distribution with particles on the edge mirrored
+        # lets get the correct mass distribution with particles
+        # on the edge mirrored
         layout = pm.decompose(halos.xyz_centers)
 
         density = pm.create(mode="real")
