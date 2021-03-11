@@ -48,6 +48,10 @@ REQUIREMENTS = [
     "sklearn",
     "halotools",
     "pandas",
+    "cython",
+    "mpsort",
+    "mpi4py",
+    "pfft-python",
     "pmesh",
     f"{CLTK['name']} @ git+{CLTK['url']}@master#egg={CLTK['name']}",
 ]
