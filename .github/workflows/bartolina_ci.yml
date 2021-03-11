@@ -36,6 +36,7 @@ jobs:
           sudo apt-get -y install libgsl-dev
       - name: Install pmesh deps
         run: |
+          sudo apt-get install mpi
           pip install cython
           pip install numpy
           pip install mpi4py
