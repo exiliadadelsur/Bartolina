@@ -24,6 +24,8 @@ import numpy as np
 
 from sklearn.cluster import DBSCAN
 
+import pmesh
+
 
 # ============================================================================
 # CONSTANTS
@@ -452,6 +454,20 @@ class ReZSpace(object):
         redshift of each group.
 
         """
+        halos, galinhalo = self.dark_matter_halos()
+
+        pm = pmesh.pm.ParticleMesh(BoxSize=1024, Nmesh=[1024, 1024, 1024])
+
+        # suavizado
+        # smoothing = 1.0 * pm.Nmesh / pm.BoxSize
+
+        # lets get the correct mass distribution with particles on the edge mirrored
+        layout = pm.decompose(halos.xyz_centers)
+
+        density = pm.create(mode="real")
+
+        density.paint(halos.xyz_centers, mass=(halos.mass).T, layout=layout)
+
         # Calculate bias
         bhm = self._bias(self.cosmo.H0.value, self.Mth, self.cosmo.Om0)
 
