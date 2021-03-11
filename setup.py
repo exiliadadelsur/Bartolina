@@ -48,6 +48,7 @@ REQUIREMENTS = [
     "attrs",
     "halotools",
     "camb",
+    "mpi4py",
     "pmesh",
     f"{CLTK['name']} @ git+{CLTK['url']}@master#egg={CLTK['name']}",
 ]
