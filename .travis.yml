@@ -33,5 +33,5 @@ matrix:
           dist: focal
 
         - python: 3.8
-          env: TOXENV=docs
+          env: TOXENV=make-docs
           dist: focal

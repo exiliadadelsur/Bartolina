@@ -7,3 +7,20 @@
 [tool.black]
 line-length = 79
 target-version = ["py38"]
+
+
+
+# =============================================================================
+# PYTEST
+# =============================================================================
+
+[tool.pytest.ini_options]
+addopts = "-m 'not integration'"
+markers = [
+    "ALL: All tests are marked with this marker",
+    "integration: Integration tests",
+    ]
+testpaths = [
+    "tests",
+]
+

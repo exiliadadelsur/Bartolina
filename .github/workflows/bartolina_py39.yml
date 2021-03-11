@@ -14,12 +14,12 @@ jobs:
       matrix:
         python-version: [3.9]
         env:
-          - TOXENV: style 
+          - TOXENV: style
           - TOXENV: docstyle
           # - TOXENV: check-manifest
           - TOXENV: py39
           - TOXENV: coverage
-          - TOXENV: docs
+          - TOXENV: make-docs
 
     steps:
       - uses: actions/checkout@master
