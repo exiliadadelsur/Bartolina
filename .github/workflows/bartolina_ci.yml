@@ -34,6 +34,11 @@ jobs:
       - name: Install GSL (for cluster_toolkit)
         run: |
           sudo apt-get -y install libgsl-dev
+      - name: Install pmesh deps
+        run: |
+          pip install cython
+          pip install numpy
+          pip install mpi4py
       - name: Install tox
         run: pip install tox tox-gh-actions
       - name: Test with tox

@@ -42,16 +42,12 @@ CLTK = {
 
 REQUIREMENTS = [
     "numpy",
-    "astropy",
-    "attrs",
-    "camb",
-    "sklearn",
-    "halotools",
     "pandas",
-    "cython",
-    "mpsort",
-    "mpi4py",
-    "pfft-python",
+    "astropy",
+    "sklearn",
+    "attrs",
+    "halotools",
+    "camb",
     "pmesh",
     f"{CLTK['name']} @ git+{CLTK['url']}@master#egg={CLTK['name']}",
 ]
