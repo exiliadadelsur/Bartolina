@@ -11,9 +11,17 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import pathlib
 import sys
 
-sys.path.insert(0, os.path.abspath(".."))
+
+PATH = pathlib.Path(os.path.abspath(os.path.dirname(__file__)))
+
+BARTOLINA_PATH = PATH.parent.parent
+
+sys.path.insert(0, str(BARTOLINA_PATH))
+
+import bartolina
 
 
 # -- Project information -----------------------------------------------------
@@ -23,7 +31,7 @@ copyright = "2020, Noelia Rocío Perez and Claudio Antonio Lopez Cortez"
 author = "Noelia Rocío Perez and Claudio Antonio Lopez Cortez"
 
 # The full version, including alpha/beta/rc tags
-release = "0.0.1"
+release = bartolina.__version__
 
 
 # -- General configuration ---------------------------------------------------
