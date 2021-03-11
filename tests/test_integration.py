@@ -97,7 +97,6 @@ def test_integration_dc_fog_corr_len(full_table):
     table = table[table["ABSR"] < -20.4]
     rzs = bartolina.ReZSpace(table["RAJ2000"], table["DEJ2000"], table["zobs"])
 
-    halos, galingroups = rzs.dark_matter_halos()
     dcfogcorr, zfogcorr = rzs.fogcorr(table["ABSR"], seedvalue=26)
 
     # length of dc_fog_corr return
@@ -110,7 +109,6 @@ def test_integration_z_fog_corr_len(full_table):
     table = table[table["ABSR"] < -20.4]
     rzs = bartolina.ReZSpace(table["RAJ2000"], table["DEJ2000"], table["zobs"])
 
-    halos, galingroups = rzs.dark_matter_halos()
     dcfogcorr, zfogcorr = rzs.fogcorr(table["ABSR"], seedvalue=26)
 
     # length of z_fog_corr return

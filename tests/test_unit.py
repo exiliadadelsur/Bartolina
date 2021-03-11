@@ -82,8 +82,9 @@ def test_dc_fog_corr_len(sample_table):
     table = table[table["ABSR"] > -20.6]
     table = table[table["ABSR"] < -20.4]
     rzs = bartolina.ReZSpace(table["RAJ2000"], table["DEJ2000"], table["zobs"])
-    halos, galingroups = rzs.dark_matter_halos()
+
     dcfogcorr, zfogcorr = rzs.fogcorr(table["ABSR"], seedvalue=26)
+
     # length of dc_fog_corr return
     assert len(dcfogcorr) == len(rzs.z)
 
@@ -93,8 +94,9 @@ def test_z_fog_corr_len(sample_table):
     table = table[table["ABSR"] > -20.6]
     table = table[table["ABSR"] < -20.4]
     rzs = bartolina.ReZSpace(table["RAJ2000"], table["DEJ2000"], table["zobs"])
-    halos, galingroups = rzs.dark_matter_halos()
+
     dcfogcorr, zfogcorr = rzs.fogcorr(table["ABSR"], seedvalue=26)
+
     # length of z_fog_corr return
     assert len(zfogcorr) == len(rzs.z)
 
@@ -105,6 +107,7 @@ def test_fogcorr(sample_table):
     table = table[table["ABSR"] < -20.4]
     rzs = bartolina.ReZSpace(table["RAJ2000"], table["DEJ2000"], table["zobs"])
     dcfogcorr, zfogcorr = rzs.fogcorr(table["ABSR"], seedvalue=26)
+
     # limits of the corrected redshift
     assert zfogcorr.min() >= 0
     assert zfogcorr.max() <= rzs.z.max()
@@ -118,5 +121,6 @@ def test_fogcorr_zluminous(sample_table):
     dcfogcorr, zfogcorr = rzs.fogcorr(table["ABSR"])
     zfogcorr = zfogcorr[table["ABSR"] < -20.5]
     z = rzs.z[table["ABSR"] < -20.5]
+
     # redshift of the luminous galaxies
     npt.assert_allclose(zfogcorr, z)
