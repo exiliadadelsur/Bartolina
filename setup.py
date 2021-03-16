@@ -23,11 +23,11 @@
 import os
 import pathlib
 
-#from ez_setup import use_setuptools
+from ez_setup import use_setuptools
 
-#use_setuptools()
+use_setuptools()
 
-from setuptools import setup, dist  # noqa
+from setuptools import setup  # noqa
 
 # =============================================================================
 # CONSTANTS
@@ -38,12 +38,6 @@ CLTK = {
     "name": "cluster_toolkit",
     "url": "https://github.com/tmcclintock/cluster_toolkit/",
 }
-
-PMESH_DEPS = [
-    "Cython",
-    "numpy",
-    "mpi4py",
-    ]
 
 REQUIREMENTS = [
     "numpy",
@@ -74,7 +68,6 @@ with open(PATH / "bartolina" / "__init__.py") as fp:
 
 
 def do_setup():
-    dist.Distribution().fetch_build_eggs(PMESH_DEPS)
     setup(
         name="bartolina",
         version=VERSION,
