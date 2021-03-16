@@ -25,16 +25,16 @@ jobs:
         with:
           python-version: ${{ matrix.python-version}}
       - name: Install pandoc
-        run: sudo apt-get install pandoc
+        run: sudo apt install pandoc
       - name: Install gfortran (for CAMB)
         run: |
           sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
-          sudo apt-get -q update
-          sudo apt-get -y install gfortran
+          sudo apt -q update
+          sudo apt -y install gfortran
       - name: Install GSL (for cluster_toolkit)
-        run: sudo apt-get -y install libgsl-dev
+        run: sudo apt -y install libgsl-dev
       - name: Install MPI (for pmesh)
-        run: sudo apt-get -y install mpi mpich
+        run: sudo apt -y install mpi mpich
       - name: Install tox
         run: pip install tox tox-gh-actions
       - name: Test with tox
