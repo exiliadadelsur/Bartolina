@@ -32,8 +32,9 @@ jobs:
           sudo apt-get -q update
           sudo apt-get -y install gfortran
       - name: Install GSL (for cluster_toolkit)
-        run: |
-          sudo apt-get -y install libgsl-dev
+        run: sudo apt-get -y install libgsl-dev
+      - name: Install MPI (for pmesh)
+        run: sudo apt-get -y install mpi mpich
       - name: Install tox
         run: pip install tox tox-gh-actions
       - name: Test with tox
