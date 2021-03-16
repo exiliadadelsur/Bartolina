@@ -27,8 +27,7 @@ import pathlib
 
 #use_setuptools()
 
-from setuptools import setup  # noqa
-
+from setuptools import setup, dist  # noqa
 
 # =============================================================================
 # CONSTANTS
@@ -40,6 +39,12 @@ CLTK = {
     "url": "https://github.com/tmcclintock/cluster_toolkit/",
 }
 
+PMESH_DEPS = [
+    "Cython",
+    "numpy",
+    "mpi4py",
+    ]
+
 REQUIREMENTS = [
     "numpy",
     "pandas",
@@ -48,7 +53,6 @@ REQUIREMENTS = [
     "attrs",
     "halotools",
     "camb",
-    "mpi4py",
     "pmesh",
     f"{CLTK['name']} @ git+{CLTK['url']}@master#egg={CLTK['name']}",
 ]
@@ -70,6 +74,7 @@ with open(PATH / "bartolina" / "__init__.py") as fp:
 
 
 def do_setup():
+    dist.Distribution().fetch_build_eggs(PMESH_DEPS)
     setup(
         name="bartolina",
         version=VERSION,
