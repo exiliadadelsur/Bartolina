@@ -10,6 +10,7 @@
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.cosmology import LambdaCDM, z_at_value
+from astropy import constants as const
 
 import attr
 
@@ -30,9 +31,6 @@ from sklearn.cluster import DBSCAN
 # ============================================================================
 # CONSTANTS
 # ============================================================================
-
-
-N_GRID_CELLS = 1024
 
 N_MONTE_CARLO = 300000
 
@@ -425,7 +423,7 @@ class ReZSpace(object):
         return f
 
     # Reconstructed FoG space; based on correcting for Kaiser effect only
-    def kaisercorr(self):
+    def kaisercorr(self, N_GRID_CELLS=1024):
         """Corrects the Kaiser effect.
 
         Returns
@@ -456,7 +454,10 @@ class ReZSpace(object):
         """
         halos, galinhalo = self.dark_matter_halos()
 
-        pm = pmesh.pm.ParticleMesh(BoxSize=1024, Nmesh=[1024, 1024, 1024])
+        pm = pmesh.pm.ParticleMesh(
+            BoxSize=N_GRID_CELLS,
+            Nmesh=[N_GRID_CELLS, N_GRID_CELLS, N_GRID_CELLS],
+        )
 
         # suavizado
         # smoothing = 1.0 * pm.Nmesh / pm.BoxSize
@@ -465,7 +466,7 @@ class ReZSpace(object):
         # on the edge mirrored
         layout = pm.decompose(halos.xyz_centers)
 
-        density = pm.create(mode="real")
+        density = pm.create(type="real")
 
         density.paint(halos.xyz_centers, mass=(halos.mass).T, layout=layout)
 
@@ -474,7 +475,40 @@ class ReZSpace(object):
 
         f = self._calcf(self.cosmo.Om0, self.cosmo.Ode0)
 
-        return bhm, f
+        def potential_transfer_function(k, v):
+            k2 = k.normp(zeromode=1)
+            return v / (k2)
+
+        var = density.r2c(out=Ellipsis)
+
+        pot_k = var.apply(potential_transfer_function, out=Ellipsis)
+
+        for d in range(3):
+
+            def force_transfer_function(k, v, d=d):
+                a = 1
+                return k[d] * 1j * a * self.cosmo.H0.value * f / bhm
+
+            var = pot_k.apply(force_transfer_function)
+
+            var1 = var.c2r(out=Ellipsis)
+
+            vel = var1.readout(halos.xyz_centers, layout=layout)
+
+        zcorr = np.zeros(len(halos.xyz_centers))
+
+        for i in range(len(halos.xyz_centers)):
+            zcorr[i] = (halos.z_centers[i] - vel[i] / const.c.value) / (
+                1 + vel[i] / const.c.value
+            )
+
+        """Corrected comoving distance."""
+        # array to store return results
+
+        dckaisercorr = np.zeros(len(zcorr))
+        dckaisercorr = self.cosmo.comoving_distance(zcorr)
+
+        return zcorr, dckaisercorr
 
     # Reconstructed Kaiser space; based on correcting for FoG effect only
     def fogcorr(self, abs_mag, mag_threshold=-20.5, seedvalue=None):
