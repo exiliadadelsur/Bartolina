@@ -100,3 +100,21 @@ def test_fogcorr(sample_table):
     z = rzs.z[table["ABSR"] < -20.5]
 
     npt.assert_allclose(zfogcorr, z)
+
+
+def test_kaisercorr(sample_table):
+    table = sample_table
+    table = table[table["ABSR"] > -20.6]
+    table = table[table["ABSR"] < -20.4]
+    rzs = bartolina.ReZSpace(table["RAJ2000"], table["DEJ2000"], table["zobs"])
+    dckaisercorr, zkaisercorr = rzs.kaisercorr(N_GRID_CELLS=3)
+    halos, galinhalo = rzs.dark_matter_halos()
+
+    # length of dckaisercorr return
+    assert len(dckaisercorr) == len(halos.z_centers)
+
+    # length of zkaisercorr return
+    assert len(zkaisercorr) == len(halos.z_centers)
+
+    # limits of the corrected redshift
+    assert zkaisercorr.min() >= 0
