@@ -11,6 +11,9 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.cosmology import LambdaCDM, z_at_value
 from astropy import constants as const
+import matplotlib.pyplot as plt
+from halotools.mock_observables import rp_pi_tpcf
+
 
 import attr
 
@@ -170,8 +173,8 @@ class ReZSpace(object):
         Example
         -------
         >>> import bartolina as bt
-        >>> rzs = bt.ReZSpace(ra, dec, z)
-        >>> halos, galinhalo = rzs.dark_matter_halos()
+        >>> barto = bt.ReZSpace(ra, dec, z)
+        >>> halos, galinhalo = barto.dark_matter_halos()
 
         Notes
         -----
@@ -210,8 +213,8 @@ class ReZSpace(object):
         Example
         -------
         >>> import bartolina as bt
-        >>> rzs = bt.ReZSpace(ra, dec, z)
-        >>> xyz = rzs.xyzcoordinates()
+        >>> barto = bt.ReZSpace(ra, dec, z)
+        >>> xyz = barto.xyzcoordinates()
 
         """
         # comoving distance to galaxies
@@ -439,8 +442,8 @@ class ReZSpace(object):
         Example
         -------
         >>> import bartolina as bt
-        >>> rzs = bt.ReZSpace(ra, dec, z)
-        >>> dckaisercorr, zkaisercorr = rzs.kaisercorr()
+        >>> barto = bt.ReZSpace(ra, dec, z)
+        >>> dckaisercorr, zkaisercorr = barto.kaisercorr()
 
         Notes
         -----
@@ -538,8 +541,8 @@ class ReZSpace(object):
         Example
         -------
         >>> import bartolina as bt
-        >>> rzs = bt.ReZSpace(ra, dec, z)
-        >>> dcfogcorr, zfogcorr = rzs.fogcorr(mags)
+        >>> barto = bt.ReZSpace(ra, dec, z)
+        >>> dcfogcorr, zfogcorr = barto.fogcorr(mags)
 
         Notes
         -----
@@ -598,8 +601,8 @@ class ReZSpace(object):
         Example
         -------
         >>> import bartolina as bt
-        >>> rzs = bt.ReZSpace(ra, dec, z)
-        >>> dccorr, zcorr = rzs.realspacecorr(mags)
+        >>> barto = bt.ReZSpace(ra, dec, z)
+        >>> dccorr, zcorr = barto.realspacecorr(mags)
 
         Notes
         -----
@@ -630,3 +633,32 @@ class ReZSpace(object):
         # corrected redshift of each galaxy
         # run for each massive halo
         return dc, zcorr
+
+    def wiphala(self, nbins, lbox):
+        """
+        Calculate the redshift space correlation function and plot it.
+
+        Parameters
+        ----------
+        nbins : integer
+            DESCRIPTION.
+        lbox : integer
+            DESCRIPTION.
+
+        Returns
+        -------
+
+        Example
+        -------
+        >>> import bartolina as bt
+        >>> barto = bt.ReZSpace(ra, dec, z)
+        >>> barto.wiphala(nbins,lbox)
+
+        """
+
+        xyz = self.xyzcoordinates()
+        rp_bins = np.logspace(-1, 1, nbins)
+        pi_bins = np.logspace(-1, 1, nbins)
+        xi = rp_pi_tpcf(xyz, rp_bins, pi_bins, period=lbox)
+        plt.contourf(xi)
+        plt.colorbar()
