@@ -635,8 +635,7 @@ class ReZSpace(object):
         return dc, zcorr
 
     def wiphala(self, nbins, lbox):
-        """
-        Calculate the redshift space correlation function and plot it.
+        """Calculate the redshift space correlation function and plot it.
 
         Parameters
         ----------
@@ -647,6 +646,7 @@ class ReZSpace(object):
 
         Returns
         -------
+        Plot
 
         Example
         -------
@@ -655,7 +655,6 @@ class ReZSpace(object):
         >>> barto.wiphala(nbins,lbox)
 
         """
-
         xyz = self.xyzcoordinates()
         rp_bins = np.logspace(-1, 1, nbins)
         pi_bins = np.logspace(-1, 1, nbins)
