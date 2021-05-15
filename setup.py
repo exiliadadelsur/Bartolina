@@ -48,6 +48,7 @@ REQUIREMENTS = [
     "halotools",
     "camb",
     "pmesh",
+    "matplotlib",
     f"{CLTK['name']} @ git+{CLTK['url']}@master#egg={CLTK['name']}",
 ]
 
