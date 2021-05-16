@@ -27,6 +27,8 @@ import numpy as np
 
 import pmesh
 
+import pyfof
+
 from sklearn.base import clone as clone_estimator
 from sklearn.cluster import DBSCAN
 
@@ -83,6 +85,42 @@ class GalInHalo(object):
 
     groups = attr.ib()
     id_groups = attr.ib()
+
+
+# =============================================================================
+# FOF WRAPPER
+# =============================================================================
+
+
+@attr.s
+class FoF:
+    """SK-Learn like implementation of the Friend-of-Friends algorithm.
+
+    Internally uses the pyfof library.
+
+    """
+
+    linking_length: float = attr.ib(
+        validator=attr.validators.instance_of(float)
+    )
+
+    def fit(self, X, y=None):
+        # pyfof returns a list of N elements, where N is the number of groups
+        # found. Each list contains the indices of X that belongs to that group
+        groups = pyfof.friends_of_friends(X, self.linking_length)
+
+        # to turn the groups into sklearn-like labels, we create an array of
+        # "labels" with the same size as data is in X
+        X_len = len(X)
+        labels = np.empty(X_len)
+
+        # then we iterate over the groups, and assign the position of the group
+        # as a label in the group indexes
+        for idx, group in enumerate(groups):
+            labels[group] = idx
+
+        # Finally we assing he labels as an attribute of the object.
+        self.labels = labels
 
 
 # ============================================================================
