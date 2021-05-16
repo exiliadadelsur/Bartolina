@@ -27,6 +27,7 @@ import numpy as np
 
 import pmesh
 
+from sklearn.base import clone as clone_estimator
 from sklearn.cluster import DBSCAN
 
 # ============================================================================
@@ -141,18 +142,23 @@ class ReZSpace(object):
     z = attr.ib()
     cosmo = attr.ib()
 
+    Mth = attr.ib(default=(10 ** 12.5))
+    delta_c = attr.ib(default="200m")
+    _cluster = attr.ib()
+
     @cosmo.default
     def _cosmo_default(self):
         return LambdaCDM(H0=100, Om0=0.27, Ode0=0.73)
 
-    Mth = attr.ib(default=(10 ** 12.5))
-    delta_c = attr.ib(default="200m")
+    @_cluster.default
+    def __cluster_default(self):
+        return DBSCAN(eps=1.2, min_samples=24)
 
     # ========================================================================
     # Public methods
     # ========================================================================
 
-    def dark_matter_halos(self):
+    def dark_matter_halos(self, **cluster_kwargs):
         """Find properties of massive dark matter halos.
 
         Find massive dark matter halos and cartesian coordinates of his
@@ -235,13 +241,18 @@ class ReZSpace(object):
         """
         # set weights for clustering
         weights = self.z * 100
+
         # clustering of galaxies
-        clustering = DBSCAN(eps=1.2, min_samples=24)
+        # we never use the instance level cluster, we always clone
+        # and use it internally
+        clustering = clone_estimator(self._cluster)
         clustering.fit(xyz, sample_weight=weights)
+
         # select only galaxies in groups
         unique_elements, counts_elements = np.unique(
             clustering.labels_, return_counts=True
         )
+
         return clustering.labels_, unique_elements
 
     def _radius(self, ra, dec, z):
