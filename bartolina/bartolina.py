@@ -107,6 +107,22 @@ class FoF(ClusterMixin, BaseEstimator):
         self.linking_length = linking_length
 
     def fit(self, X, y=None):
+        """Perform FoF clustering from features, or distance matrix.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix} of shape (n_samples, n_features), or \
+            (n_samples, n_samples)
+            Training instances to cluster, or distances between instances if
+
+        y : Ignored
+            Not used, present here for API consistency by convention.
+
+        Returns
+        -------
+        self
+
+        """
         # pyfof returns a list of N elements, where N is the number of groups
         # found. Each list contains the indices of X that belongs to that group
         groups = pyfof.friends_of_friends(X, self.linking_length)
