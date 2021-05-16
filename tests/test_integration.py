@@ -12,6 +12,7 @@ import numpy.testing as npt
 
 import pytest
 
+from sklearn.cluster import DBSCAN, KMeans
 
 # =============================================================================
 # MARKERS
@@ -24,6 +25,22 @@ pytestmark = [pytest.mark.integration]
 # ============================================================================
 # TESTS
 # ============================================================================
+
+
+@pytest.mark.parametrize(
+    "hclust", [DBSCAN(eps=1.2, min_samples=24), bartolina.FoF(), KMeans()]
+)
+def test_integration_halo_cluster_custom_simple_works(full_table, hclust):
+    table = full_table
+    table = table[table["ABSR"] > -20.6]
+    table = table[table["ABSR"] < -20.4]
+    rzs = bartolina.ReZSpace(
+        table["RAJ2000"],
+        table["DEJ2000"],
+        table["zobs"],
+        halo_clustering=hclust,
+    )
+    rzs.dark_matter_halos()
 
 
 def test_integration_radius_40(full_dmh):

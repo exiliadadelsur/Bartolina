@@ -106,7 +106,7 @@ class FoF(ClusterMixin, BaseEstimator):
             raise ValueError("linking_length must be > 0")
         self.linking_length = linking_length
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, sample_weight=None):
         """Perform FoF clustering from features, or distance matrix.
 
         Parameters
@@ -116,6 +116,9 @@ class FoF(ClusterMixin, BaseEstimator):
             Training instances to cluster, or distances between instances if
 
         y : Ignored
+            Not used, present here for API consistency by convention.
+
+        sample_weights : Ignored
             Not used, present here for API consistency by convention.
 
         Returns
@@ -174,7 +177,6 @@ class ReZSpace(object):
     halo_clustering : sklearn.base.BaseEstimator
         Algorithm to identify the halos. Default ``sklearn.cluster.DBSCAN``.
 
-
     Notes
     -----
     For the corrections is needed the center, radius and mass of
@@ -230,7 +232,7 @@ class ReZSpace(object):
     # Public methods
     # ========================================================================
 
-    def dark_matter_halos(self, **cluster_kwargs):
+    def dark_matter_halos(self):
         """Find properties of massive dark matter halos.
 
         Find massive dark matter halos and cartesian coordinates of his
