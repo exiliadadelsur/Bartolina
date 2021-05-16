@@ -176,10 +176,15 @@ class ReZSpace(object):
 
     References
     ----------
-    .. [nav97] Navarro J. F., Frenk C. S., White S. D., 1997, Apj, 490, 493
-    .. [merchan2005] Merchán M., Zandivarez A., 2005, Apj, 630, 759
-    .. [zapata2009] Zapata T., Pérez J., Padilla N., & Tissera P., 2009,
-        MNRAS, 394, 2229
+    .. [nav97] Navarro, J. F., Frenk, C. S., & White, S. D. (1997).
+        A universal density profile from hierarchical clustering.
+        The Astrophysical Journal, 490(2), 493.
+    .. [merchan2005] Merchán, M. E., & Zandivarez, A. (2005).
+        Galaxy groups in the third data release of the sloan
+        digital sky survey. The Astrophysical Journal, 630(2), 759.
+    .. [zapata2009] Zapata, T., Perez, J., Padilla, N., & Tissera, P. (2009).
+        The influence of halo assembly on galaxies and galaxy groups.
+        Monthly Notices of the Royal Astronomical Society, 394(4), 2229-2237.
 
 
     """
