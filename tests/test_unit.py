@@ -107,7 +107,7 @@ def test_kaisercorr(sample_table):
     table = table[table["ABSR"] > -20.6]
     table = table[table["ABSR"] < -20.4]
     rzs = bartolina.ReZSpace(table["RAJ2000"], table["DEJ2000"], table["zobs"])
-    dckaisercorr, zkaisercorr = rzs.kaisercorr(N_GRID_CELLS=3)
+    dckaisercorr, zkaisercorr = rzs.kaisercorr(n_cells=3)
     halos, galinhalo = rzs.dark_matter_halos()
 
     # length of dckaisercorr return

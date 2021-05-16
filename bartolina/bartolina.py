@@ -7,29 +7,27 @@
 """Bartolina : real space reconstruction algorithm for redshift."""
 
 
-from astropy import units as u
+import astropy.constants as const
+import astropy.units as u
 from astropy.coordinates import SkyCoord
 from astropy.cosmology import LambdaCDM, z_at_value
-from astropy import constants as const
-import matplotlib.pyplot as plt
-from halotools.mock_observables import rp_pi_tpcf
-
 
 import attr
 
 import camb
-from camb import model
 
-from cluster_toolkit import bias
+import cluster_toolkit as ctoolkit
 
 from halotools.empirical_models import NFWProfile
+from halotools.mock_observables import rp_pi_tpcf
+
+import matplotlib.pyplot as plt
 
 import numpy as np
 
 import pmesh
 
 from sklearn.cluster import DBSCAN
-
 
 # ============================================================================
 # CONSTANTS
@@ -340,12 +338,12 @@ class ReZSpace(object):
         pars.InitPower.set_params(ns=0.965)
         pars.set_matter_power(redshifts=[0.0, 0.8], kmax=2.0)
 
-        pars.NonLinear = model.NonLinear_none
+        pars.NonLinear = camb.model.NonLinear_none
         results = camb.get_results(pars)
         kh, z, pk = results.get_matter_power_spectrum(
             minkh=1e-4, maxkh=1, npoints=1000
         )
-        bhm = bias.bias_at_M(mth, kh, pk, omega_m)
+        bhm = ctoolkit.bias.bias_at_M(mth, kh, pk, omega_m)
         return bhm
 
     def _dc_fog_corr(
@@ -426,7 +424,7 @@ class ReZSpace(object):
         return f
 
     # Reconstructed FoG space; based on correcting for Kaiser effect only
-    def kaisercorr(self, N_GRID_CELLS=1024):
+    def kaisercorr(self, n_cells=1024):
         """Corrects the Kaiser effect.
 
         Returns
@@ -458,8 +456,8 @@ class ReZSpace(object):
         halos, galinhalo = self.dark_matter_halos()
 
         pm = pmesh.pm.ParticleMesh(
-            BoxSize=N_GRID_CELLS,
-            Nmesh=[N_GRID_CELLS, N_GRID_CELLS, N_GRID_CELLS],
+            BoxSize=n_cells,
+            Nmesh=[n_cells, n_cells, n_cells],
         )
 
         # suavizado
