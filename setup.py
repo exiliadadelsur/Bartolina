@@ -49,6 +49,7 @@ REQUIREMENTS = [
     "camb",
     "pmesh",
     "matplotlib",
+    "pyfof",
     f"{CLTK['name']} @ git+{CLTK['url']}@master#egg={CLTK['name']}",
 ]
 
