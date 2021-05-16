@@ -25,4 +25,4 @@ __version__ = "0.2"
 
 __all__ = ["ReZSpace", "FoF"]
 
-from .bartolina import FoF, ReZSpace
+from .core import FoF, ReZSpace

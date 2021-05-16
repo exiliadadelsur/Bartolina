@@ -4,4 +4,4 @@ bartolina
 .. toctree::
    :maxdepth: 4
 
-   bartolina
+   bartolina.rst

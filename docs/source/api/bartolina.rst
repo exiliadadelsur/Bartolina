@@ -4,13 +4,14 @@ bartolina package
 Submodules
 ----------
 
-bartolina.bartolina module
+``bartolina.core`` module
 --------------------------
 
-.. automodule:: bartolina.bartolina
+.. automodule:: bartolina.core
    :members:
    :undoc-members:
    :show-inheritance:
+   :member-order: bysource
 
 
 Module contents
@@ -20,3 +21,4 @@ Module contents
    :members:
    :undoc-members:
    :show-inheritance:
+   :member-order: bysource
