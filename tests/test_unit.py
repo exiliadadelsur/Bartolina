@@ -15,6 +15,20 @@ import numpy.testing as npt
 # ============================================================================
 
 
+def test_fof():
+    random = np.random.default_rng(seed=42)
+    npts = 10
+
+    cluster0 = random.normal(-1, 0.2, (npts // 2, 2))
+    cluster1 = random.normal(1, 0.2, (npts // 2, 2))
+    data = np.vstack((cluster0, cluster1))
+
+    fof = bartolina.FoF(0.4)
+    labels = fof.fit_predict(data)
+
+    npt.assert_array_equal(labels, [0, 0, 0, 0, 0, 1, 1, 1, 1, 1])
+
+
 def test_radius_40(sample_dmh):
     dmh = sample_dmh
     radius = dmh[0].radius[150]

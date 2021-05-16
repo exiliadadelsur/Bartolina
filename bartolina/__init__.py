@@ -23,6 +23,6 @@ Finger of God (FoG) effects. We follow the work carried out in
 
 __version__ = "0.2"
 
-__all__ = ["ReZSpace"]
+__all__ = ["ReZSpace", "FoF"]
 
-from .bartolina import ReZSpace  # noqa
+from .bartolina import FoF, ReZSpace
