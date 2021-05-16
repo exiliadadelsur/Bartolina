@@ -1,2 +1,2 @@
 Sphinx
-sphinx-rtd-theme
+astropy-sphinx-theme
