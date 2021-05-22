@@ -47,7 +47,7 @@ def pytest_collection_modifyitems(items):
 
 
 @functools.lru_cache
-def _dr12_load():
+def _sloan_dr12_load():
 
     # I point to the parts folder
     path = RESOURCES_PATH / "SLOAN_dr12_10"
@@ -68,8 +68,8 @@ def _dr12_load():
 
 
 @pytest.fixture
-def dr12():
-    table = _dr12_load()
+def sloan_dr12():
+    table = _sloan_dr12_load()
     return table.copy()
 
 
