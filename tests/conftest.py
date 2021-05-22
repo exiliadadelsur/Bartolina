@@ -4,6 +4,7 @@
 # License: MIT
 #   Full Text: https://github.com/exiliadadelsur/Bartolina/blob/master/LICENSE
 
+import functools
 import os
 import pathlib
 
@@ -12,6 +13,8 @@ from astropy.table import Table
 import bartolina
 
 import joblib
+
+import numpy as np
 
 import pytest
 
@@ -39,10 +42,40 @@ def pytest_collection_modifyitems(items):
 
 
 # ============================================================================
-# FIXTURES
+# FIXTURES SLOAN DR12
 # ============================================================================
 
-# FULL
+
+@functools.lru_cache
+def _dr12_load():
+
+    # I point to the parts folder
+    path = RESOURCES_PATH / "SLOAN_dr12_10"
+
+    # I list all part files in order
+    parts_names = sorted(path.glob("part_*.joblib.bz2"))
+
+    # load all files in memory
+    parts = map(joblib.load, parts_names)
+
+    # I concatenate all the arrays into one
+    arr = np.concatenate(list(parts))
+
+    # I turn it into artropy tables
+    table = Table(arr)
+
+    return table
+
+
+@pytest.fixture
+def dr12():
+    table = _dr12_load()
+    return table.copy()
+
+
+# =============================================================================
+# FIXTURES FULL
+# =============================================================================
 
 
 @pytest.fixture
@@ -65,7 +98,9 @@ def full_dmh():
     return halos, galingroups
 
 
-# sample
+# =============================================================================
+# FIXTURES SAMPLE
+# =============================================================================
 
 
 @pytest.fixture
