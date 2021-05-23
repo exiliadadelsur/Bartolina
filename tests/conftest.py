@@ -56,10 +56,10 @@ def _sloan_dr12_load():
     parts_names = sorted(path.glob("part_*.joblib.bz2"))
 
     # load all files in memory
-    parts = map(joblib.load, parts_names)
+    parts = [joblib.load(p) for p in parts_names]
 
     # I concatenate all the arrays into one
-    arr = np.concatenate(list(parts))
+    arr = np.concatenate(parts)
 
     # I turn it into artropy tables
     table = Table(arr)
