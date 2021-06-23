@@ -764,7 +764,7 @@ class ReZSpace(object):
         return dc, zcorr
 
     def wiphala(self, xi):
-        """Calculate the redshift space correlation function and plot it.
+        """Plot redshift space.
 
         Parameters
         ----------
