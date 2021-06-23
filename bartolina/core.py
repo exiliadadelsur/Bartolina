@@ -19,7 +19,6 @@ import camb
 import cluster_toolkit as ctoolkit
 
 from halotools.empirical_models import NFWProfile
-from halotools.mock_observables import rp_pi_tpcf
 
 import matplotlib.pyplot as plt
 
@@ -100,18 +99,37 @@ class FoF(ClusterMixin, BaseEstimator):
     """
 
     def __init__(self, linking_length: float = 0.5):
+        """Write description.
+
+        Parameters
+        ----------
+        linking_length : float, optional
+            DESCRIPTION. The default is 0.5.
+
+        Raises
+        ------
+        TypeError
+            DESCRIPTION.
+        ValueError
+            DESCRIPTION.
+
+        Returns
+        -------
+        None.
+
+        """
         if not isinstance(linking_length, (int, float)):
             raise TypeError("linking_length must be a float instance")
         elif linking_length <= 0:
             raise ValueError("linking_length must be > 0")
         self.linking_length = linking_length
 
-    def fit(self, X, y=None, sample_weight=None):
+    def fit(self, x, y=None, sample_weight=None):
         """Perform FoF clustering from features, or distance matrix.
 
         Parameters
         ----------
-        X : {array-like, sparse matrix} of shape (n_samples, n_features), or \
+        x : {array-like, sparse matrix} of shape (n_samples, n_features), or \
             (n_samples, n_samples)
             Training instances to cluster, or distances between instances if
 
@@ -127,13 +145,13 @@ class FoF(ClusterMixin, BaseEstimator):
 
         """
         # pyfof returns a list of N elements, where N is the number of groups
-        # found. Each list contains the indices of X that belongs to that group
-        groups = pyfof.friends_of_friends(X, self.linking_length)
+        # found. Each list contains the indices of x that belongs to that group
+        groups = pyfof.friends_of_friends(x, self.linking_length)
 
         # to turn the groups into sklearn-like labels, we create an array of
-        # "labels" with the same size as data is in X
-        X_len = len(X)
-        labels = np.empty(X_len, dtype=int)
+        # "labels" with the same size as data is in x
+        x_len = len(x)
+        labels = np.empty(x_len, dtype=int)
 
         # then we iterate over the groups, and assign the position of the group
         # as a label in the group indexes
@@ -566,8 +584,7 @@ class ReZSpace(object):
         halos, galinhalo = self.dark_matter_halos()
 
         pm = pmesh.pm.ParticleMesh(
-            BoxSize=n_cells,
-            Nmesh=[n_cells, n_cells, n_cells],
+            BoxSize=n_cells, Nmesh=[n_cells, n_cells, n_cells]
         )
 
         # suavizado
@@ -619,7 +636,7 @@ class ReZSpace(object):
         dckaisercorr = np.zeros(len(zcorr))
         dckaisercorr = self.cosmo.comoving_distance(zcorr)
 
-        return zcorr, dckaisercorr
+        return dckaisercorr, zcorr
 
     # Reconstructed Kaiser space; based on correcting for FoG effect only
     def fogcorr(self, abs_mag, mag_threshold=-20.5, seedvalue=None):
@@ -746,7 +763,7 @@ class ReZSpace(object):
         # run for each massive halo
         return dc, zcorr
 
-    def wiphala(self, nbins, lbox):
+    def wiphala(self, xi):
         """Calculate the redshift space correlation function and plot it.
 
         Parameters
@@ -767,10 +784,6 @@ class ReZSpace(object):
         >>> barto.wiphala(nbins,lbox)
 
         """
-        xyz = self.xyzcoordinates()
-        rp_bins = np.logspace(-1, 1, nbins)
-        pi_bins = np.logspace(-1, 1, nbins)
-        xi = rp_pi_tpcf(xyz, rp_bins, pi_bins, period=lbox)
         fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(50, 50))
         ax[0, 1].contourf(xi)
         ax[0, 1].set_axis_off()
