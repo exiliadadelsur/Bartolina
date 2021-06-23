@@ -768,8 +768,8 @@ class ReZSpace(object):
 
         Parameters
         ----------
-        xi : TYPE
-            DESCRIPTION.
+        xi : ndarray
+            Redshift space correlation function.
 
         Returns
         -------
