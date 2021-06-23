@@ -768,7 +768,7 @@ class ReZSpace(object):
 
         Parameters
         ----------
-        xi : integer
+        xi : TYPE
             DESCRIPTION.
 
         Returns
