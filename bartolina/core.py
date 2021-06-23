@@ -768,9 +768,7 @@ class ReZSpace(object):
 
         Parameters
         ----------
-        nbins : integer
-            DESCRIPTION.
-        lbox : integer
+        xi : integer
             DESCRIPTION.
 
         Returns
@@ -781,7 +779,7 @@ class ReZSpace(object):
         -------
         >>> import bartolina as bt
         >>> barto = bt.ReZSpace(ra, dec, z)
-        >>> barto.wiphala(nbins,lbox)
+        >>> barto.wiphala(xi)
 
         """
         fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(50, 50))
