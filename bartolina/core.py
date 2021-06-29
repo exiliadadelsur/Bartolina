@@ -484,9 +484,7 @@ class ReZSpace(object):
             numgal = np.sum(sat_gal_mask)
 
             # Monte Carlo simulation for distance
-            nfw = NFWProfile(
-                self.cosmo, halo_centers[i].value, mdef=self.delta_c
-            )
+            nfw = NFWProfile(self.cosmo, halo_centers[i], mdef=self.delta_c)
             radial_positions_pos = nfw.mc_generate_nfw_radial_positions(
                 num_pts=N_MONTE_CARLO,
                 halo_radius=halos.radius[i],
@@ -507,7 +505,7 @@ class ReZSpace(object):
             dc = al.choice(radial_positions, size=numgal)
 
             # combine Monte Carlo distance and distance to halo center
-            dcfogcorr[sat_gal_mask] = halo_centers[i].value + dc
+            dcfogcorr[sat_gal_mask] = halo_centers[i] + dc
 
         return dcfogcorr, halo_centers, halos.radius, galinhalo.groups
 
@@ -745,6 +743,7 @@ class ReZSpace(object):
 
         # Kaiser correction with kaisercorr method
         dckaisercorr, zkaisercorr = self.kaisercorr()
+        dckaisercorr = dckaisercorr.value
 
         # FoG correction with fogcorr method
         dccorr, dc_centers, radius, groups = self._dc_fog_corr(
