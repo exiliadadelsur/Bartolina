@@ -20,8 +20,6 @@ import cluster_toolkit as ctoolkit
 
 from halotools.empirical_models import NFWProfile
 
-import matplotlib.pyplot as plt
-
 import numpy as np
 
 import pmesh
@@ -486,7 +484,9 @@ class ReZSpace(object):
             numgal = np.sum(sat_gal_mask)
 
             # Monte Carlo simulation for distance
-            nfw = NFWProfile(self.cosmo, halos.z_centers[i], mdef=self.delta_c)
+            nfw = NFWProfile(
+                self.cosmo, halo_centers[i].value, mdef=self.delta_c
+            )
             radial_positions_pos = nfw.mc_generate_nfw_radial_positions(
                 num_pts=N_MONTE_CARLO,
                 halo_radius=halos.radius[i],
@@ -507,7 +507,7 @@ class ReZSpace(object):
             dc = al.choice(radial_positions, size=numgal)
 
             # combine Monte Carlo distance and distance to halo center
-            dcfogcorr[sat_gal_mask] = halo_centers[i] + dc
+            dcfogcorr[sat_gal_mask] = halo_centers[i].value + dc
 
         return dcfogcorr, halo_centers, halos.radius, galinhalo.groups
 
@@ -740,9 +740,6 @@ class ReZSpace(object):
         only satellite galaxies. For this is use the magnitude threshold.
 
         """
-        # array to store return results
-        dc = np.zeros(len(self.z))
-
         # properties of halos
         halos, galinhalo = self.dark_matter_halos()
 
@@ -761,34 +758,4 @@ class ReZSpace(object):
 
         # corrected redshift of each galaxy
         # run for each massive halo
-        return dc, zcorr
-
-    def wiphala(self, xi):
-        """Plot redshift space.
-
-        Parameters
-        ----------
-        xi : ndarray
-            Redshift space correlation function.
-
-        Returns
-        -------
-        Plot
-
-        Example
-        -------
-        >>> import bartolina as bt
-        >>> barto = bt.ReZSpace(ra, dec, z)
-        >>> barto.wiphala(xi)
-
-        """
-        fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(50, 50))
-        ax[0, 1].contourf(xi)
-        ax[0, 1].set_axis_off()
-        ax[1, 1].contourf(np.flip(xi, 0))
-        ax[1, 1].set_axis_off()
-        ax[0, 0].contourf(np.flip(xi, 1))
-        ax[0, 0].set_axis_off()
-        ax[1, 0].contourf(np.flip(xi))
-        ax[1, 0].set_axis_off()
-        fig.subplots_adjust(wspace=0, hspace=0)
+        return dccorr, zcorr
